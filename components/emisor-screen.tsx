@@ -83,26 +83,6 @@ const CATEGORIES = [
   'Otro',
 ]
 
-const MOCK_SENT_REPORTS = [
-  {
-    id: 1,
-    title: 'Actualización de syllabus',
-    date: '2024-06-15',
-    status: 'enviado',
-  },
-  {
-    id: 2,
-    title: 'Solicitud de recursos',
-    date: '2024-06-14',
-    status: 'recibido',
-  },
-  {
-    id: 3,
-    title: 'Participación en seminario',
-    date: '2024-06-13',
-    status: 'recibido',
-  },
-]
 
 export default function EmisorScreen({ onBack }: EmisorScreenProps) {
   const [selectedDepartment, setSelectedDepartment] = useState('')
@@ -294,10 +274,8 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
       </header>
 
       {/* Main Content */}
-      <main className="mx-auto max-w-6xl px-6 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Form Section */}
-          <div className="lg:col-span-2 bg-card border border-border rounded-lg p-8 shadow-sm">
+      <main className="mx-auto max-w-4xl px-6 py-12">
+        <div className="bg-card border border-border rounded-lg p-8 shadow-sm">
             {selectedDepartment === 'Control de Estudios - Pregrado' ? (
               // Custom Pregrado Form
               <form onSubmit={handlePregradoSubmit} className="space-y-6">
@@ -494,29 +472,6 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                 </div>
               </form>
             )}
-          </div>
-
-          {/* Sidebar - Recent Reports */}
-          <div className="bg-card border border-border rounded-lg p-6 shadow-sm h-fit">
-            <h3 className="text-lg font-bold mb-4 text-foreground">Reportes Recientes</h3>
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              {MOCK_SENT_REPORTS.map((report) => (
-                <div key={report.id} className="p-3 rounded-lg bg-muted">
-                  <p className="font-medium text-sm text-foreground truncate">{report.title}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{report.date}</p>
-                  <span
-                    className={`inline-flex mt-2 px-2 py-1 rounded text-xs font-medium ${
-                      report.status === 'recibido'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-blue-100 text-blue-800'
-                    }`}
-                  >
-                    {report.status === 'recibido' ? 'Recibido' : 'Enviado'}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </main>
     </div>
