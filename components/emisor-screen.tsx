@@ -112,6 +112,73 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     category: '',
   })
 
+  // States for Control de Estudios - Pregrado
+  const [selectedMonth, setSelectedMonth] = useState('Enero')
+  const [pregradoCareers, setPregradoCareers] = useState<{
+    [key: string]: { nuevos_ingresos: number; egresados: number; retiros: number; prosecucion: number }
+  }>({
+    'Administradores y Contadores Públicos': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Economistas': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Estadistas y Actuarios': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Internacionalistas': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Sociólogos': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Trabajadores Sociales': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Antropólogos': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+  })
+
+  const handlePregradoCareerChange = (career: string, field: string, value: number) => {
+    setPregradoCareers((prev) => ({
+      ...prev,
+      [career]: {
+        ...prev[career],
+        [field]: value >= 0 ? value : 0,
+      },
+    }))
+  }
+
+  const handlePregradoSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    // Construct payload according to Contexto.md
+    const payload = {
+      departamento_emisor: "Control de Estudios - Pregrado",
+      mes_reportado: selectedMonth,
+      registros: [
+        {
+          hoja_destino: "Academia",
+          bloque: "Resumen de Matrícula de Pregrado",
+          detalles: Object.keys(pregradoCareers).map((careerName) => {
+            const careerData = pregradoCareers[careerName]
+            return {
+              sub_bloque: careerName,
+              variables: {
+                nuevos_ingresos: careerData.nuevos_ingresos,
+                egresados: careerData.egresados,
+                retiros: careerData.retiros,
+                ...(selectedMonth === 'Enero' ? { prosecucion: careerData.prosecucion } : {})
+              }
+            }
+          })
+        }
+      ]
+    }
+    
+    console.log('Pregrado Payload:', payload)
+    alert('Reporte de Pregrado enviado correctamente (Simulación):\n' + JSON.stringify(payload, null, 2))
+    
+    // Reset form
+    setSelectedMonth('Enero')
+    setPregradoCareers({
+      'Administradores y Contadores Públicos': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Economistas': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Estadistas y Actuarios': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Internacionalistas': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Sociólogos': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Trabajadores Sociales': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Antropólogos': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    })
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     console.log('Report sent from:', selectedDepartment, 'Data:', formData)
@@ -231,78 +298,202 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Form Section */}
           <div className="lg:col-span-2 bg-card border border-border rounded-lg p-8 shadow-sm">
-            <h2 className="text-2xl font-bold mb-6 text-foreground">Nuevo Reporte</h2>
+            {selectedDepartment === 'Control de Estudios - Pregrado' ? (
+              // Custom Pregrado Form
+              <form onSubmit={handlePregradoSubmit} className="space-y-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold text-foreground">Nuevo Reporte de Pregrado</h2>
+                </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Title Field */}
-              <div className="space-y-2">
-                <label htmlFor="title" className="block text-sm font-semibold text-foreground">
-                  Título del Reporte
-                </label>
-                <input
-                  id="title"
-                  type="text"
-                  required
-                  placeholder="Describe brevemente el tema..."
-                  className="w-full rounded-lg border border-border bg-input px-4 py-2 text-foreground placeholder-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                />
-              </div>
+                {/* Mes Reportado */}
+                <div className="space-y-2 max-w-xs">
+                  <label htmlFor="pregrado-month" className="block text-sm font-semibold text-foreground">
+                    Mes Reportado
+                  </label>
+                  <select
+                    id="pregrado-month"
+                    required
+                    className="w-full rounded-lg border border-border bg-input px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(e.target.value)}
+                  >
+                    {[
+                      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+                    ].map((month) => (
+                      <option key={month} value={month}>
+                        {month}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedMonth === 'Enero' && (
+                    <p className="text-xs text-amber-600 dark:text-amber-500 font-medium mt-1">
+                      ⚠️ Se ha habilitado el campo de "Prosecución" para el mes de Enero.
+                    </p>
+                  )}
+                </div>
 
-              {/* Category Field */}
-              <div className="space-y-2">
-                <label htmlFor="category" className="block text-sm font-semibold text-foreground">
-                  Categoría
-                </label>
-                <select
-                  id="category"
-                  required
-                  className="w-full rounded-lg border border-border bg-input px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                >
-                  <option value="">Selecciona una categoría</option>
-                  {CATEGORIES.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                {/* Careers Grid */}
+                <div className="space-y-6 pt-4 border-t border-border">
+                  <h3 className="text-lg font-bold text-foreground">Matrícula por Carrera</h3>
+                  
+                  <div className="space-y-6">
+                    {Object.keys(pregradoCareers).map((careerName) => {
+                      const careerData = pregradoCareers[careerName]
+                      return (
+                        <div key={careerName} className="p-5 rounded-xl border border-border bg-muted/30 space-y-4">
+                          <h4 className="font-bold text-base text-primary">{careerName}</h4>
+                          
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            {/* Nuevos Ingresos */}
+                            <div className="space-y-1">
+                              <label className="text-xs font-semibold text-muted-foreground">Nuevos Ingresos</label>
+                              <input
+                                type="number"
+                                min={0}
+                                required
+                                className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                                value={careerData.nuevos_ingresos}
+                                onChange={(e) => handlePregradoCareerChange(careerName, 'nuevos_ingresos', parseInt(e.target.value) || 0)}
+                              />
+                            </div>
 
-              {/* Description Field */}
-              <div className="space-y-2">
-                <label htmlFor="description" className="block text-sm font-semibold text-foreground">
-                  Descripción Detallada
-                </label>
-                <textarea
-                  id="description"
-                  required
-                  placeholder="Describe el contenido del reporte con detalle..."
-                  rows={6}
-                  className="w-full rounded-lg border border-border bg-input px-4 py-2 text-foreground placeholder-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none resize-none"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                />
-              </div>
+                            {/* Egresados */}
+                            <div className="space-y-1">
+                              <label className="text-xs font-semibold text-muted-foreground">Egresados</label>
+                              <input
+                                type="number"
+                                min={0}
+                                required
+                                className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                                value={careerData.egresados}
+                                onChange={(e) => handlePregradoCareerChange(careerName, 'egresados', parseInt(e.target.value) || 0)}
+                              />
+                            </div>
 
+                            {/* Retiros */}
+                            <div className="space-y-1">
+                              <label className="text-xs font-semibold text-muted-foreground">Retiros</label>
+                              <input
+                                type="number"
+                                min={0}
+                                required
+                                className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                                value={careerData.retiros}
+                                onChange={(e) => handlePregradoCareerChange(careerName, 'retiros', parseInt(e.target.value) || 0)}
+                              />
+                            </div>
 
-              {/* Submit Buttons */}
-              <div className="flex gap-4 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setSelectedDepartment('')}
-                  className="flex-1"
-                >
-                  Cambiar Departamento
-                </Button>
-                <Button type="submit" className="flex-1 bg-secondary text-white hover:bg-secondary/90">
-                  Enviar Reporte
-                </Button>
-              </div>
-            </form>
+                            {/* Prosecución - Only if month is Enero */}
+                            {selectedMonth === 'Enero' && (
+                              <div className="space-y-1 sm:col-span-3 border-t border-border/40 pt-3 mt-1">
+                                <label className="text-xs font-semibold text-amber-600 dark:text-amber-500 flex items-center gap-1">
+                                  <span>Prosecución (Requerido para Enero)</span>
+                                </label>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  required
+                                  className="w-full sm:max-w-xs rounded-lg border border-amber-300 bg-amber-50/10 px-3 py-1.5 text-sm text-foreground focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                                  value={careerData.prosecucion}
+                                  onChange={(e) => handlePregradoCareerChange(careerName, 'prosecucion', parseInt(e.target.value) || 0)}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-4 pt-6 border-t border-border">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setSelectedDepartment('')}
+                    className="flex-1"
+                  >
+                    Cambiar Departamento
+                  </Button>
+                  <Button type="submit" className="flex-1 bg-secondary text-white hover:bg-secondary/90">
+                    Enviar Reporte
+                  </Button>
+                </div>
+              </form>
+            ) : (
+              // Generic Form for other departments
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Title Field */}
+                <div className="space-y-2">
+                  <label htmlFor="title" className="block text-sm font-semibold text-foreground">
+                    Título del Reporte
+                  </label>
+                  <input
+                    id="title"
+                    type="text"
+                    required
+                    placeholder="Describe brevemente el tema..."
+                    className="w-full rounded-lg border border-border bg-input px-4 py-2 text-foreground placeholder-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  />
+                </div>
+
+                {/* Category Field */}
+                <div className="space-y-2">
+                  <label htmlFor="category" className="block text-sm font-semibold text-foreground">
+                    Categoría
+                  </label>
+                  <select
+                    id="category"
+                    required
+                    className="w-full rounded-lg border border-border bg-input px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  >
+                    <option value="">Selecciona una categoría</option>
+                    {CATEGORIES.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Description Field */}
+                <div className="space-y-2">
+                  <label htmlFor="description" className="block text-sm font-semibold text-foreground">
+                    Descripción Detallada
+                  </label>
+                  <textarea
+                    id="description"
+                    required
+                    placeholder="Describe el contenido del reporte con detalle..."
+                    rows={6}
+                    className="w-full rounded-lg border border-border bg-input px-4 py-2 text-foreground placeholder-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none resize-none"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  />
+                </div>
+
+                {/* Submit Buttons */}
+                <div className="flex gap-4 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setSelectedDepartment('')}
+                    className="flex-1"
+                  >
+                    Cambiar Departamento
+                  </Button>
+                  <Button type="submit" className="flex-1 bg-secondary text-white hover:bg-secondary/90">
+                    Enviar Reporte
+                  </Button>
+                </div>
+              </form>
+            )}
           </div>
 
           {/* Sidebar - Recent Reports */}
