@@ -159,6 +159,121 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     })
   }
 
+  // States for Control de Estudios - Postgrado
+  const [selectedPostgradoMonth, setSelectedPostgradoMonth] = useState('Enero')
+  const [postgradoPrograms, setPostgradoPrograms] = useState<{
+    [key: string]: { nuevos_ingresos: number; egresados: number; retiros: number; prosecucion: number }
+  }>({
+    'Especialista en Auditoría': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Especialista en Finanzas de Empresas': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Especialista en Mercadeo para Empresas': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Especialista en Administración de Recursos Humanos': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Especialista en Análisis de Datos': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Especialista en Estadística': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Especialista en Gerencia de Proyectos de Investigación y Desarrollo': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Especialista en Organización de Empresas': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Especialista en Política y Comercio Petrolero Internacional': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Especialista en Seguridad Social. Mención Bienestar Estudiantil': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Especialista en Seguridad Social. Mención Seguridad y Salud en el Trabajo': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Especialista en Seguridad Social. Mención Bienestar Laboral': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Especialista en Seguridad Social. Mención Gerencia Social': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Especialista en Seguridad Social. Mención Planificación de la Seguridad': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Maestría en Ciencias Sociales': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Maestría en Economía Internacional': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Maestría en Economía y Administración de Hidrocarburos': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Maestría en Estadistica': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Maestría en Estudios de la Mujer': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Maestría en Gerencia Empresarial': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Maestría en Gestión de Investigación y Desarrollo': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Maestría en Moneda e Instituciones Financieras': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Maestría en Relaciones Internacionales': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Maestría en Seguridad Social': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Maestría en Teoría y Política Económica': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Doctorado en Ciencias Sociales': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Doctorado en Economía': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Doctorado en Estadística': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Doctorado en Gerencia': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Doctorado en Gestión de Investigación y Desarrollo': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    'Doctorado en Seguridad Social': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+  })
+
+  const handlePostgradoProgramChange = (programName: string, field: string, value: number) => {
+    setPostgradoPrograms((prev) => ({
+      ...prev,
+      [programName]: {
+        ...prev[programName],
+        [field]: value >= 0 ? value : 0,
+      },
+    }))
+  }
+
+  const handlePostgradoSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    // Construct payload according to Contexto.md
+    const payload = {
+      departamento_emisor: "Control de Estudios - Postgrado",
+      mes_reportado: selectedPostgradoMonth,
+      registros: [
+        {
+          hoja_destino: "Academia",
+          bloque: "Resumen de Matrícula de Postgrado",
+          detalles: Object.keys(postgradoPrograms).map((programName) => {
+            const programData = postgradoPrograms[programName]
+            return {
+              sub_bloque: programName,
+              variables: {
+                nuevos_ingresos: programData.nuevos_ingresos,
+                egresados: programData.egresados,
+                retiros: programData.retiros,
+                ...(selectedPostgradoMonth === 'Enero' ? { prosecucion: programData.prosecucion } : {})
+              }
+            }
+          })
+        }
+      ]
+    }
+    
+    console.log('Postgrado Payload:', payload)
+    alert('Reporte de Postgrado enviado correctamente (Simulación):\n' + JSON.stringify(payload, null, 2))
+    
+    // Reset form
+    setSelectedPostgradoMonth('Enero')
+    setPostgradoPrograms({
+      'Especialista en Auditoría': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Especialista en Finanzas de Empresas': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Especialista en Mercadeo para Empresas': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Especialista en Administración de Recursos Humanos': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Especialista en Análisis de Datos': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Especialista en Estadística': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Especialista en Gerencia de Proyectos de Investigación y Desarrollo': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Especialista en Organización de Empresas': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Especialista en Política y Comercio Petrolero Internacional': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Especialista en Seguridad Social. Mención Bienestar Estudiantil': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Especialista en Seguridad Social. Mención Seguridad y Salud en el Trabajo': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Especialista en Seguridad Social. Mención Bienestar Laboral': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Especialista en Seguridad Social. Mención Gerencia Social': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Especialista en Seguridad Social. Mención Planificación de la Seguridad': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Maestría en Ciencias Sociales': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Maestría en Economía Internacional': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Maestría en Economía y Administración de Hidrocarburos': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Maestría en Estadistica': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Maestría en Estudios de la Mujer': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Maestría en Gerencia Empresarial': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Maestría en Gestión de Investigación y Desarrollo': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Maestría en Moneda e Instituciones Financieras': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Maestría en Relaciones Internacionales': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Maestría en Seguridad Social': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Maestría en Teoría y Política Económica': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Doctorado en Ciencias Sociales': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Doctorado en Economía': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Doctorado en Estadística': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Doctorado en Gerencia': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Doctorado en Gestión de Investigación y Desarrollo': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Doctorado en Seguridad Social': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+    })
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     console.log('Report sent from:', selectedDepartment, 'Data:', formData)
@@ -375,6 +490,132 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                                   className="w-full sm:max-w-xs rounded-lg border border-amber-300 bg-amber-50/10 px-3 py-1.5 text-sm text-foreground focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
                                   value={careerData.prosecucion}
                                   onChange={(e) => handlePregradoCareerChange(careerName, 'prosecucion', parseInt(e.target.value) || 0)}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-4 pt-6 border-t border-border">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setSelectedDepartment('')}
+                    className="flex-1"
+                  >
+                    Cambiar Departamento
+                  </Button>
+                  <Button type="submit" className="flex-1 bg-secondary text-white hover:bg-secondary/90">
+                    Enviar Reporte
+                  </Button>
+                </div>
+              </form>
+            ) : selectedDepartment === 'Control de Estudios - Postgrado' ? (
+              // Custom Postgrado Form
+              <form onSubmit={handlePostgradoSubmit} className="space-y-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold text-foreground">Nuevo Reporte de Postgrado</h2>
+                </div>
+
+                {/* Mes Reportado */}
+                <div className="space-y-2 max-w-xs">
+                  <label htmlFor="postgrado-month" className="block text-sm font-semibold text-foreground">
+                    Mes Reportado
+                  </label>
+                  <select
+                    id="postgrado-month"
+                    required
+                    className="w-full rounded-lg border border-border bg-input px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                    value={selectedPostgradoMonth}
+                    onChange={(e) => setSelectedPostgradoMonth(e.target.value)}
+                  >
+                    {[
+                      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+                    ].map((month) => (
+                      <option key={month} value={month}>
+                        {month}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedPostgradoMonth === 'Enero' && (
+                    <p className="text-xs text-amber-600 dark:text-amber-500 font-medium mt-1">
+                      ⚠️ Se ha habilitado el campo de "Prosecución" para el mes de Enero.
+                    </p>
+                  )}
+                </div>
+
+                {/* Programs Grid (2 COLUMNS) */}
+                <div className="space-y-6 pt-4 border-t border-border">
+                  <h3 className="text-lg font-bold text-foreground">Matrícula por Programa</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {Object.keys(postgradoPrograms).map((programName) => {
+                      const programData = postgradoPrograms[programName]
+                      return (
+                        <div key={programName} className="p-4 rounded-xl border border-border bg-muted/30 space-y-3 flex flex-col justify-between">
+                          <h4 className="font-bold text-sm text-primary leading-snug">{programName}</h4>
+                          
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-3 gap-2">
+                              {/* Nuevos Ingresos */}
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">N. Ingresos</label>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  required
+                                  className="w-full rounded-lg border border-border bg-input px-2 py-1 text-xs text-foreground focus:border-primary focus:outline-none"
+                                  value={programData.nuevos_ingresos}
+                                  onChange={(e) => handlePostgradoProgramChange(programName, 'nuevos_ingresos', parseInt(e.target.value) || 0)}
+                                />
+                              </div>
+
+                              {/* Egresados */}
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">Egresados</label>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  required
+                                  className="w-full rounded-lg border border-border bg-input px-2 py-1 text-xs text-foreground focus:border-primary focus:outline-none"
+                                  value={programData.egresados}
+                                  onChange={(e) => handlePostgradoProgramChange(programName, 'egresados', parseInt(e.target.value) || 0)}
+                                />
+                              </div>
+
+                              {/* Retiros */}
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">Retiros</label>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  required
+                                  className="w-full rounded-lg border border-border bg-input px-2 py-1 text-xs text-foreground focus:border-primary focus:outline-none"
+                                  value={programData.retiros}
+                                  onChange={(e) => handlePostgradoProgramChange(programName, 'retiros', parseInt(e.target.value) || 0)}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Prosecución - Only if month is Enero */}
+                            {selectedPostgradoMonth === 'Enero' && (
+                              <div className="space-y-1 border-t border-border/40 pt-2">
+                                <label className="text-[10px] font-semibold text-amber-600 dark:text-amber-500 uppercase tracking-wider block">
+                                  Prosecución
+                                </label>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  required
+                                  className="w-full rounded-lg border border-amber-300 bg-amber-50/10 px-2 py-1 text-xs text-foreground focus:border-amber-500 focus:outline-none"
+                                  value={programData.prosecucion}
+                                  onChange={(e) => handlePostgradoProgramChange(programName, 'prosecucion', parseInt(e.target.value) || 0)}
                                 />
                               </div>
                             )}
