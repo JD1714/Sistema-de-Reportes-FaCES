@@ -283,8 +283,8 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
 
   interface AcademiaItem {
     descripcion_item: string
-    estudiantes_asignados: number
-    proyectos_culminados: number
+    actividades_realizadas: number
+    estudiantes_atendidos: number
   }
 
   interface ExtensionItem {
@@ -294,7 +294,7 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
   }
 
   const [academiaItems, setAcademiaItems] = useState<AcademiaItem[]>([
-    { descripcion_item: '', estudiantes_asignados: 0, proyectos_culminados: 0 }
+    { descripcion_item: '', actividades_realizadas: 0, estudiantes_atendidos: 0 }
   ])
 
   const [extensionItems, setExtensionItems] = useState<ExtensionItem[]>([
@@ -304,7 +304,7 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
   const handleAddAcademiaItem = () => {
     setAcademiaItems((prev) => [
       ...prev,
-      { descripcion_item: '', estudiantes_asignados: 0, proyectos_culminados: 0 }
+      { descripcion_item: '', actividades_realizadas: 0, estudiantes_atendidos: 0 }
     ])
   }
 
@@ -358,8 +358,8 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
           detalles: nothingToReportAcademia ? [] : academiaItems.map((item) => ({
             descripcion_item: item.descripcion_item,
             variables: {
-              estudiantes_asignados: item.estudiantes_asignados,
-              proyectos_culminados: item.proyectos_culminados
+              actividades_realizadas: item.actividades_realizadas,
+              estudiantes_atendidos: item.estudiantes_atendidos
             }
           }))
         },
@@ -385,7 +385,7 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     setComunitarioActiveTab('academia')
     setNothingToReportAcademia(false)
     setNothingToReportExtension(false)
-    setAcademiaItems([{ descripcion_item: '', estudiantes_asignados: 0, proyectos_culminados: 0 }])
+    setAcademiaItems([{ descripcion_item: '', actividades_realizadas: 0, estudiantes_atendidos: 0 }])
     setExtensionItems([{ descripcion_item: '', actividades_realizadas: 0, beneficiarios: 0 }])
   }
 
@@ -873,25 +873,25 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
 
                                 <div className="grid grid-cols-2 gap-4">
                                   <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-muted-foreground">Estudiantes Asignados</label>
+                                    <label className="text-xs font-semibold text-muted-foreground">Nro de Actividades Realizadas</label>
                                     <input
                                       type="number"
                                       min={0}
                                       required
                                       className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
-                                      value={item.estudiantes_asignados}
-                                      onChange={(e) => handleAcademiaItemChange(idx, 'estudiantes_asignados', parseInt(e.target.value) || 0)}
+                                      value={item.actividades_realizadas}
+                                      onChange={(e) => handleAcademiaItemChange(idx, 'actividades_realizadas', parseInt(e.target.value) || 0)}
                                     />
                                   </div>
                                   <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-muted-foreground">Actividades Culminadas</label>
+                                    <label className="text-xs font-semibold text-muted-foreground">Estudiantes Atendidos</label>
                                     <input
                                       type="number"
                                       min={0}
                                       required
                                       className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
-                                      value={item.proyectos_culminados}
-                                      onChange={(e) => handleAcademiaItemChange(idx, 'proyectos_culminados', parseInt(e.target.value) || 0)}
+                                      value={item.estudiantes_atendidos}
+                                      onChange={(e) => handleAcademiaItemChange(idx, 'estudiantes_atendidos', parseInt(e.target.value) || 0)}
                                     />
                                   </div>
                                 </div>
