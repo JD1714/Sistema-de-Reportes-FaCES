@@ -118,7 +118,7 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
 
   const handlePregradoSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     // Construct payload according to Contexto.md
     const payload = {
       departamento_emisor: "Control de Estudios - Pregrado",
@@ -142,10 +142,10 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
         }
       ]
     }
-    
+
     console.log('Pregrado Payload:', payload)
     alert('Reporte de Pregrado enviado correctamente (Simulación):\n' + JSON.stringify(payload, null, 2))
-    
+
     // Reset form
     setSelectedMonth('Enero')
     setPregradoCareers({
@@ -209,7 +209,7 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
 
   const handlePostgradoSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     // Construct payload according to Contexto.md
     const payload = {
       departamento_emisor: "Control de Estudios - Postgrado",
@@ -233,10 +233,10 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
         }
       ]
     }
-    
+
     console.log('Postgrado Payload:', payload)
     alert('Reporte de Postgrado enviado correctamente (Simulación):\n' + JSON.stringify(payload, null, 2))
-    
+
     // Reset form
     setSelectedPostgradoMonth('Enero')
     setPostgradoPrograms({
@@ -277,7 +277,7 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
   // States for Servicio Comunitario
   const [selectedComunitarioMonth, setSelectedComunitarioMonth] = useState('Enero')
   const [comunitarioActiveTab, setComunitarioActiveTab] = useState<'academia' | 'extension'>('academia')
-  
+
   const [nothingToReportAcademia, setNothingToReportAcademia] = useState(false)
   const [nothingToReportExtension, setNothingToReportExtension] = useState(false)
 
@@ -387,6 +387,91 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     setNothingToReportExtension(false)
     setAcademiaItems([{ descripcion_item: '', actividades_realizadas: 0, estudiantes_atendidos: 0 }])
     setExtensionItems([{ descripcion_item: '', actividades_realizadas: 0, beneficiarios: 0 }])
+  }
+
+  // States for Biblioteca
+  const [selectedBibliotecaMonth, setSelectedBibliotecaMonth] = useState('Enero')
+  const [nothingToReportBiblioteca, setNothingToReportBiblioteca] = useState(false)
+  const [reportFixedActivity, setReportFixedActivity] = useState(true)
+  const [fixedActivityAtendidos, setFixedActivityAtendidos] = useState(0)
+
+  interface BibliotecaCustomItem {
+    descripcion_item: string
+    estudiantes_atendidos: number
+  }
+
+  const [bibliotecaCustomItems, setBibliotecaCustomItems] = useState<BibliotecaCustomItem[]>([])
+
+  const handleAddBibliotecaCustomItem = () => {
+    setBibliotecaCustomItems((prev) => [
+      ...prev,
+      { descripcion_item: '', estudiantes_atendidos: 0 }
+    ])
+  }
+
+  const handleRemoveBibliotecaCustomItem = (index: number) => {
+    setBibliotecaCustomItems((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const handleBibliotecaCustomItemChange = (index: number, field: keyof BibliotecaCustomItem, value: string | number) => {
+    setBibliotecaCustomItems((prev) => {
+      const updated = [...prev]
+      updated[index] = {
+        ...updated[index],
+        [field]: value
+      }
+      return updated
+    })
+  }
+
+  const handleBibliotecaSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+
+    const detalles = []
+
+    if (!nothingToReportBiblioteca) {
+      if (reportFixedActivity) {
+        detalles.push({
+          descripcion_item: "Atención de los estudiantes via on line y presencial",
+          variables: {
+            estudiantes_atendidos: fixedActivityAtendidos
+          }
+        })
+      }
+
+      bibliotecaCustomItems.forEach((item) => {
+        if (item.descripcion_item.trim() !== '') {
+          detalles.push({
+            descripcion_item: item.descripcion_item,
+            variables: {
+              estudiantes_atendidos: item.estudiantes_atendidos
+            }
+          })
+        }
+      })
+    }
+
+    const payload = {
+      departamento_emisor: "Biblioteca",
+      mes_reportado: selectedBibliotecaMonth,
+      registros: [
+        {
+          hoja_destino: "Estudiantes",
+          bloque: "Bibliotecas",
+          detalles: detalles
+        }
+      ]
+    }
+
+    console.log('Biblioteca Payload:', payload)
+    alert('Reporte de Biblioteca enviado correctamente (Simulación):\n' + JSON.stringify(payload, null, 2))
+
+    // Reset Form
+    setSelectedBibliotecaMonth('Enero')
+    setNothingToReportBiblioteca(false)
+    setReportFixedActivity(true)
+    setFixedActivityAtendidos(0)
+    setBibliotecaCustomItems([])
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -506,274 +591,527 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
       {/* Main Content */}
       <main className="mx-auto max-w-4xl px-6 py-12">
         <div className="bg-card border border-border rounded-lg p-8 shadow-sm">
-            {selectedDepartment === 'Control de Estudios - Pregrado' ? (
-              // Custom Pregrado Form
-              <form onSubmit={handlePregradoSubmit} className="space-y-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold text-foreground">Nuevo Reporte de Pregrado</h2>
-                </div>
+          {selectedDepartment === 'Control de Estudios - Pregrado' ? (
+            // Custom Pregrado Form
+            <form onSubmit={handlePregradoSubmit} className="space-y-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-foreground">Nuevo Reporte de Pregrado</h2>
+              </div>
 
-                {/* Mes Reportado */}
-                <div className="space-y-2 max-w-xs">
-                  <label htmlFor="pregrado-month" className="block text-sm font-semibold text-foreground">
-                    Mes Reportado
-                  </label>
-                  <select
-                    id="pregrado-month"
-                    required
-                    className="w-full rounded-lg border border-border bg-input px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
-                    value={selectedMonth}
-                    onChange={(e) => setSelectedMonth(e.target.value)}
-                  >
-                    {[
-                      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-                    ].map((month) => (
-                      <option key={month} value={month}>
-                        {month}
-                      </option>
-                    ))}
-                  </select>
-                  {selectedMonth === 'Enero' && (
-                    <p className="text-xs text-amber-600 dark:text-amber-500 font-medium mt-1">
-                      ⚠️ Se ha habilitado el campo de "Prosecución" para el mes de Enero.
-                    </p>
-                  )}
-                </div>
+              {/* Mes Reportado */}
+              <div className="space-y-2 max-w-xs">
+                <label htmlFor="pregrado-month" className="block text-sm font-semibold text-foreground">
+                  Mes Reportado
+                </label>
+                <select
+                  id="pregrado-month"
+                  required
+                  className="w-full rounded-lg border border-border bg-input px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                >
+                  {[
+                    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+                  ].map((month) => (
+                    <option key={month} value={month}>
+                      {month}
+                    </option>
+                  ))}
+                </select>
+                {selectedMonth === 'Enero' && (
+                  <p className="text-xs text-amber-600 dark:text-amber-500 font-medium mt-1">
+                    ⚠️ Se ha habilitado el campo de "Prosecución" para el mes de Enero.
+                  </p>
+                )}
+              </div>
 
-                {/* Careers Grid */}
-                <div className="space-y-6 pt-4 border-t border-border">
-                  <h3 className="text-lg font-bold text-foreground">Matrícula por Carrera</h3>
-                  
-                  <div className="space-y-6">
-                    {Object.keys(pregradoCareers).map((careerName) => {
-                      const careerData = pregradoCareers[careerName]
-                      return (
-                        <div key={careerName} className="p-5 rounded-xl border border-border bg-muted/30 space-y-4">
-                          <h4 className="font-bold text-base text-primary">{careerName}</h4>
-                          
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                            {/* Nuevos Ingresos */}
-                            <div className="space-y-1">
-                              <label className="text-xs font-semibold text-muted-foreground">Nuevos Ingresos</label>
+              {/* Careers Grid */}
+              <div className="space-y-6 pt-4 border-t border-border">
+                <h3 className="text-lg font-bold text-foreground">Matrícula por Carrera</h3>
+
+                <div className="space-y-6">
+                  {Object.keys(pregradoCareers).map((careerName) => {
+                    const careerData = pregradoCareers[careerName]
+                    return (
+                      <div key={careerName} className="p-5 rounded-xl border border-border bg-muted/30 space-y-4">
+                        <h4 className="font-bold text-base text-primary">{careerName}</h4>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                          {/* Nuevos Ingresos */}
+                          <div className="space-y-1">
+                            <label className="text-xs font-semibold text-muted-foreground">Nuevos Ingresos</label>
+                            <input
+                              type="number"
+                              min={0}
+                              required
+                              className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                              value={careerData.nuevos_ingresos}
+                              onChange={(e) => handlePregradoCareerChange(careerName, 'nuevos_ingresos', parseInt(e.target.value) || 0)}
+                            />
+                          </div>
+
+                          {/* Egresados */}
+                          <div className="space-y-1">
+                            <label className="text-xs font-semibold text-muted-foreground">Egresados</label>
+                            <input
+                              type="number"
+                              min={0}
+                              required
+                              className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                              value={careerData.egresados}
+                              onChange={(e) => handlePregradoCareerChange(careerName, 'egresados', parseInt(e.target.value) || 0)}
+                            />
+                          </div>
+
+                          {/* Retiros */}
+                          <div className="space-y-1">
+                            <label className="text-xs font-semibold text-muted-foreground">Retiros</label>
+                            <input
+                              type="number"
+                              min={0}
+                              required
+                              className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                              value={careerData.retiros}
+                              onChange={(e) => handlePregradoCareerChange(careerName, 'retiros', parseInt(e.target.value) || 0)}
+                            />
+                          </div>
+
+                          {/* Prosecución - Only if month is Enero */}
+                          {selectedMonth === 'Enero' && (
+                            <div className="space-y-1 sm:col-span-3 border-t border-border/40 pt-3 mt-1">
+                              <label className="text-xs font-semibold text-amber-600 dark:text-amber-500 flex items-center gap-1">
+                                <span>Prosecución (Requerido para Enero)</span>
+                              </label>
                               <input
                                 type="number"
                                 min={0}
                                 required
-                                className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
-                                value={careerData.nuevos_ingresos}
-                                onChange={(e) => handlePregradoCareerChange(careerName, 'nuevos_ingresos', parseInt(e.target.value) || 0)}
+                                className="w-full sm:max-w-xs rounded-lg border border-amber-300 bg-amber-50/10 px-3 py-1.5 text-sm text-foreground focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                                value={careerData.prosecucion}
+                                onChange={(e) => handlePregradoCareerChange(careerName, 'prosecucion', parseInt(e.target.value) || 0)}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-4 pt-6 border-t border-border">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setSelectedDepartment('')}
+                  className="flex-1"
+                >
+                  Cambiar Departamento
+                </Button>
+                <Button type="submit" className="flex-1 bg-secondary text-white hover:bg-secondary/90">
+                  Enviar Reporte
+                </Button>
+              </div>
+            </form>
+          ) : selectedDepartment === 'Control de Estudios - Postgrado' ? (
+            // Custom Postgrado Form
+            <form onSubmit={handlePostgradoSubmit} className="space-y-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-foreground">Nuevo Reporte de Postgrado</h2>
+              </div>
+
+              {/* Mes Reportado */}
+              <div className="space-y-2 max-w-xs">
+                <label htmlFor="postgrado-month" className="block text-sm font-semibold text-foreground">
+                  Mes Reportado
+                </label>
+                <select
+                  id="postgrado-month"
+                  required
+                  className="w-full rounded-lg border border-border bg-input px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                  value={selectedPostgradoMonth}
+                  onChange={(e) => setSelectedPostgradoMonth(e.target.value)}
+                >
+                  {[
+                    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+                  ].map((month) => (
+                    <option key={month} value={month}>
+                      {month}
+                    </option>
+                  ))}
+                </select>
+                {selectedPostgradoMonth === 'Enero' && (
+                  <p className="text-xs text-amber-600 dark:text-amber-500 font-medium mt-1">
+                    ⚠️ Se ha habilitado el campo de "Prosecución" para el mes de Enero.
+                  </p>
+                )}
+              </div>
+
+              {/* Programs Grid (2 COLUMNS) */}
+              <div className="space-y-6 pt-4 border-t border-border">
+                <h3 className="text-lg font-bold text-foreground">Matrícula por Programa</h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {Object.keys(postgradoPrograms).map((programName) => {
+                    const programData = postgradoPrograms[programName]
+                    return (
+                      <div key={programName} className="p-4 rounded-xl border border-border bg-muted/30 space-y-3 flex flex-col justify-between">
+                        <h4 className="font-bold text-sm text-primary leading-snug">{programName}</h4>
+
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-3 gap-2">
+                            {/* Nuevos Ingresos */}
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">N. Ingresos</label>
+                              <input
+                                type="number"
+                                min={0}
+                                required
+                                className="w-full rounded-lg border border-border bg-input px-2 py-1 text-xs text-foreground focus:border-primary focus:outline-none"
+                                value={programData.nuevos_ingresos}
+                                onChange={(e) => handlePostgradoProgramChange(programName, 'nuevos_ingresos', parseInt(e.target.value) || 0)}
                               />
                             </div>
 
                             {/* Egresados */}
                             <div className="space-y-1">
-                              <label className="text-xs font-semibold text-muted-foreground">Egresados</label>
+                              <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">Egresados</label>
                               <input
                                 type="number"
                                 min={0}
                                 required
-                                className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
-                                value={careerData.egresados}
-                                onChange={(e) => handlePregradoCareerChange(careerName, 'egresados', parseInt(e.target.value) || 0)}
+                                className="w-full rounded-lg border border-border bg-input px-2 py-1 text-xs text-foreground focus:border-primary focus:outline-none"
+                                value={programData.egresados}
+                                onChange={(e) => handlePostgradoProgramChange(programName, 'egresados', parseInt(e.target.value) || 0)}
                               />
                             </div>
 
                             {/* Retiros */}
                             <div className="space-y-1">
-                              <label className="text-xs font-semibold text-muted-foreground">Retiros</label>
+                              <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">Retiros</label>
                               <input
                                 type="number"
                                 min={0}
                                 required
-                                className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
-                                value={careerData.retiros}
-                                onChange={(e) => handlePregradoCareerChange(careerName, 'retiros', parseInt(e.target.value) || 0)}
+                                className="w-full rounded-lg border border-border bg-input px-2 py-1 text-xs text-foreground focus:border-primary focus:outline-none"
+                                value={programData.retiros}
+                                onChange={(e) => handlePostgradoProgramChange(programName, 'retiros', parseInt(e.target.value) || 0)}
                               />
                             </div>
+                          </div>
 
-                            {/* Prosecución - Only if month is Enero */}
-                            {selectedMonth === 'Enero' && (
-                              <div className="space-y-1 sm:col-span-3 border-t border-border/40 pt-3 mt-1">
-                                <label className="text-xs font-semibold text-amber-600 dark:text-amber-500 flex items-center gap-1">
-                                  <span>Prosecución (Requerido para Enero)</span>
-                                </label>
+                          {/* Prosecución - Only if month is Enero */}
+                          {selectedPostgradoMonth === 'Enero' && (
+                            <div className="space-y-1 border-t border-border/40 pt-2">
+                              <label className="text-[10px] font-semibold text-amber-600 dark:text-amber-500 uppercase tracking-wider block">
+                                Prosecución
+                              </label>
+                              <input
+                                type="number"
+                                min={0}
+                                required
+                                className="w-full rounded-lg border border-amber-300 bg-amber-50/10 px-2 py-1 text-xs text-foreground focus:border-amber-500 focus:outline-none"
+                                value={programData.prosecucion}
+                                onChange={(e) => handlePostgradoProgramChange(programName, 'prosecucion', parseInt(e.target.value) || 0)}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-4 pt-6 border-t border-border">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setSelectedDepartment('')}
+                  className="flex-1"
+                >
+                  Cambiar Departamento
+                </Button>
+                <Button type="submit" className="flex-1 bg-secondary text-white hover:bg-secondary/90">
+                  Enviar Reporte
+                </Button>
+              </div>
+            </form>
+          ) : selectedDepartment === 'Servicio Comunitario' ? (
+            // Custom Servicio Comunitario Form
+            <form onSubmit={handleServicioComunitarioSubmit} className="space-y-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-foreground">Nuevo Reporte de Servicio Comunitario</h2>
+              </div>
+
+              {/* Mes Reportado */}
+              <div className="space-y-2 max-w-xs">
+                <label htmlFor="comunitario-month" className="block text-sm font-semibold text-foreground">
+                  Mes Reportado
+                </label>
+                <select
+                  id="comunitario-month"
+                  required
+                  className="w-full rounded-lg border border-border bg-input px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                  value={selectedComunitarioMonth}
+                  onChange={(e) => setSelectedComunitarioMonth(e.target.value)}
+                >
+                  {[
+                    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+                  ].map((month) => (
+                    <option key={month} value={month}>
+                      {month}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Tabs Navigation */}
+              <div className="flex border-b border-border mt-6">
+                <button
+                  type="button"
+                  className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${comunitarioActiveTab === 'academia'
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-muted-foreground hover:text-foreground'
+                    }`}
+                  onClick={() => setComunitarioActiveTab('academia')}
+                >
+                  Academia (Requisito de Graduación)
+                </button>
+                <button
+                  type="button"
+                  className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${comunitarioActiveTab === 'extension'
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-muted-foreground hover:text-foreground'
+                    }`}
+                  onClick={() => setComunitarioActiveTab('extension')}
+                >
+                  Extensión (Labor Social)
+                </button>
+              </div>
+
+              {/* Tab content: Academia */}
+              {comunitarioActiveTab === 'academia' && (
+                <div className="space-y-6 pt-4">
+                  <div className="flex items-center space-x-2 bg-muted/40 p-4 rounded-lg border border-border">
+                    <input
+                      type="checkbox"
+                      id="nothing-academia"
+                      className="rounded border-border text-primary focus:ring-primary h-4 w-4 cursor-pointer"
+                      checked={nothingToReportAcademia}
+                      onChange={(e) => setNothingToReportAcademia(e.target.checked)}
+                    />
+                    <label htmlFor="nothing-academia" className="text-sm font-medium text-foreground select-none cursor-pointer">
+                      Nada que reportar en esta sección (Academia)
+                    </label>
+                  </div>
+
+                  {!nothingToReportAcademia && (
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-bold text-foreground">Actividades Requisito de Grado</h3>
+                        <Button
+                          type="button"
+                          onClick={handleAddAcademiaItem}
+                          variant="outline"
+                          className="text-xs flex items-center gap-1 py-1.5 px-3 border border-border bg-card text-foreground hover:bg-muted"
+                        >
+                          + Agregar Actividad
+                        </Button>
+                      </div>
+
+                      <div className="space-y-4">
+                        {academiaItems.map((item, idx) => (
+                          <div key={idx} className="p-5 rounded-xl border border-border bg-muted/20 space-y-4 relative">
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs font-bold text-muted-foreground uppercase">Actividad #{idx + 1}</span>
+                              {academiaItems.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveAcademiaItem(idx)}
+                                  className="text-red-500 hover:text-red-700 text-xs font-semibold"
+                                >
+                                  Eliminar
+                                </button>
+                              )}
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4">
+                              <div className="space-y-1">
+                                <label className="text-xs font-semibold text-muted-foreground">Descripción de la Actividad</label>
                                 <input
-                                  type="number"
-                                  min={0}
+                                  type="text"
                                   required
-                                  className="w-full sm:max-w-xs rounded-lg border border-amber-300 bg-amber-50/10 px-3 py-1.5 text-sm text-foreground focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
-                                  value={careerData.prosecucion}
-                                  onChange={(e) => handlePregradoCareerChange(careerName, 'prosecucion', parseInt(e.target.value) || 0)}
+                                  placeholder="Ej. Proyecto de alfabetización digital comunitaria..."
+                                  className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                  value={item.descripcion_item}
+                                  onChange={(e) => handleAcademiaItemChange(idx, 'descripcion_item', e.target.value)}
                                 />
                               </div>
-                            )}
+
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                  <label className="text-xs font-semibold text-muted-foreground">Número de Actividades Realizadas</label>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    required
+                                    className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                    value={item.actividades_realizadas}
+                                    onChange={(e) => handleAcademiaItemChange(idx, 'actividades_realizadas', parseInt(e.target.value) || 0)}
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-xs font-semibold text-muted-foreground">Estudiantes Atendidos</label>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    required
+                                    className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                    value={item.estudiantes_atendidos}
+                                    onChange={(e) => handleAcademiaItemChange(idx, 'estudiantes_atendidos', parseInt(e.target.value) || 0)}
+                                  />
+                                </div>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex gap-4 pt-6 border-t border-border">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setSelectedDepartment('')}
-                    className="flex-1"
-                  >
-                    Cambiar Departamento
-                  </Button>
-                  <Button type="submit" className="flex-1 bg-secondary text-white hover:bg-secondary/90">
-                    Enviar Reporte
-                  </Button>
-                </div>
-              </form>
-            ) : selectedDepartment === 'Control de Estudios - Postgrado' ? (
-              // Custom Postgrado Form
-              <form onSubmit={handlePostgradoSubmit} className="space-y-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold text-foreground">Nuevo Reporte de Postgrado</h2>
-                </div>
-
-                {/* Mes Reportado */}
-                <div className="space-y-2 max-w-xs">
-                  <label htmlFor="postgrado-month" className="block text-sm font-semibold text-foreground">
-                    Mes Reportado
-                  </label>
-                  <select
-                    id="postgrado-month"
-                    required
-                    className="w-full rounded-lg border border-border bg-input px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
-                    value={selectedPostgradoMonth}
-                    onChange={(e) => setSelectedPostgradoMonth(e.target.value)}
-                  >
-                    {[
-                      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-                    ].map((month) => (
-                      <option key={month} value={month}>
-                        {month}
-                      </option>
-                    ))}
-                  </select>
-                  {selectedPostgradoMonth === 'Enero' && (
-                    <p className="text-xs text-amber-600 dark:text-amber-500 font-medium mt-1">
-                      ⚠️ Se ha habilitado el campo de "Prosecución" para el mes de Enero.
-                    </p>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
+              )}
 
-                {/* Programs Grid (2 COLUMNS) */}
-                <div className="space-y-6 pt-4 border-t border-border">
-                  <h3 className="text-lg font-bold text-foreground">Matrícula por Programa</h3>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {Object.keys(postgradoPrograms).map((programName) => {
-                      const programData = postgradoPrograms[programName]
-                      return (
-                        <div key={programName} className="p-4 rounded-xl border border-border bg-muted/30 space-y-3 flex flex-col justify-between">
-                          <h4 className="font-bold text-sm text-primary leading-snug">{programName}</h4>
-                          
-                          <div className="space-y-3">
-                            <div className="grid grid-cols-3 gap-2">
-                              {/* Nuevos Ingresos */}
-                              <div className="space-y-1">
-                                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">N. Ingresos</label>
-                                <input
-                                  type="number"
-                                  min={0}
-                                  required
-                                  className="w-full rounded-lg border border-border bg-input px-2 py-1 text-xs text-foreground focus:border-primary focus:outline-none"
-                                  value={programData.nuevos_ingresos}
-                                  onChange={(e) => handlePostgradoProgramChange(programName, 'nuevos_ingresos', parseInt(e.target.value) || 0)}
-                                />
-                              </div>
+              {/* Tab content: Extension */}
+              {comunitarioActiveTab === 'extension' && (
+                <div className="space-y-6 pt-4">
+                  <div className="flex items-center space-x-2 bg-muted/40 p-4 rounded-lg border border-border">
+                    <input
+                      type="checkbox"
+                      id="nothing-extension"
+                      className="rounded border-border text-primary focus:ring-primary h-4 w-4 cursor-pointer"
+                      checked={nothingToReportExtension}
+                      onChange={(e) => setNothingToReportExtension(e.target.checked)}
+                    />
+                    <label htmlFor="nothing-extension" className="text-sm font-medium text-foreground select-none cursor-pointer">
+                      Nada que reportar en esta sección (Extensión)
+                    </label>
+                  </div>
 
-                              {/* Egresados */}
-                              <div className="space-y-1">
-                                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">Egresados</label>
-                                <input
-                                  type="number"
-                                  min={0}
-                                  required
-                                  className="w-full rounded-lg border border-border bg-input px-2 py-1 text-xs text-foreground focus:border-primary focus:outline-none"
-                                  value={programData.egresados}
-                                  onChange={(e) => handlePostgradoProgramChange(programName, 'egresados', parseInt(e.target.value) || 0)}
-                                />
-                              </div>
+                  {!nothingToReportExtension && (
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-lg font-bold text-foreground">Actividades de Labor Social</h3>
+                        <Button
+                          type="button"
+                          onClick={handleAddExtensionItem}
+                          variant="outline"
+                          className="text-xs flex items-center gap-1 py-1.5 px-3 border border-border bg-card text-foreground hover:bg-muted"
+                        >
+                          + Agregar Actividad
+                        </Button>
+                      </div>
 
-                              {/* Retiros */}
-                              <div className="space-y-1">
-                                <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">Retiros</label>
-                                <input
-                                  type="number"
-                                  min={0}
-                                  required
-                                  className="w-full rounded-lg border border-border bg-input px-2 py-1 text-xs text-foreground focus:border-primary focus:outline-none"
-                                  value={programData.retiros}
-                                  onChange={(e) => handlePostgradoProgramChange(programName, 'retiros', parseInt(e.target.value) || 0)}
-                                />
-                              </div>
+                      <div className="space-y-4">
+                        {extensionItems.map((item, idx) => (
+                          <div key={idx} className="p-5 rounded-xl border border-border bg-muted/20 space-y-4 relative">
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs font-bold text-muted-foreground uppercase">Actividad #{idx + 1}</span>
+                              {extensionItems.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveExtensionItem(idx)}
+                                  className="text-red-500 hover:text-red-700 text-xs font-semibold"
+                                >
+                                  Eliminar
+                                </button>
+                              )}
                             </div>
 
-                            {/* Prosecución - Only if month is Enero */}
-                            {selectedPostgradoMonth === 'Enero' && (
-                              <div className="space-y-1 border-t border-border/40 pt-2">
-                                <label className="text-[10px] font-semibold text-amber-600 dark:text-amber-500 uppercase tracking-wider block">
-                                  Prosecución
-                                </label>
+                            <div className="grid grid-cols-1 gap-4">
+                              <div className="space-y-1">
+                                <label className="text-xs font-semibold text-muted-foreground">Descripción de la Actividad</label>
                                 <input
-                                  type="number"
-                                  min={0}
+                                  type="text"
                                   required
-                                  className="w-full rounded-lg border border-amber-300 bg-amber-50/10 px-2 py-1 text-xs text-foreground focus:border-amber-500 focus:outline-none"
-                                  value={programData.prosecucion}
-                                  onChange={(e) => handlePostgradoProgramChange(programName, 'prosecucion', parseInt(e.target.value) || 0)}
+                                  placeholder="Ej. Taller de educación financiera básica..."
+                                  className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                  value={item.descripcion_item}
+                                  onChange={(e) => handleExtensionItemChange(idx, 'descripcion_item', e.target.value)}
                                 />
                               </div>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
 
-                {/* Action Buttons */}
-                <div className="flex gap-4 pt-6 border-t border-border">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setSelectedDepartment('')}
-                    className="flex-1"
-                  >
-                    Cambiar Departamento
-                  </Button>
-                  <Button type="submit" className="flex-1 bg-secondary text-white hover:bg-secondary/90">
-                    Enviar Reporte
-                  </Button>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                  <label className="text-xs font-semibold text-muted-foreground">Actividades Realizadas</label>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    required
+                                    className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                    value={item.actividades_realizadas}
+                                    onChange={(e) => handleExtensionItemChange(idx, 'actividades_realizadas', parseInt(e.target.value) || 0)}
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-xs font-semibold text-muted-foreground">Beneficiarios</label>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    required
+                                    className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                    value={item.beneficiarios}
+                                    onChange={(e) => handleExtensionItemChange(idx, 'beneficiarios', parseInt(e.target.value) || 0)}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </form>
-            ) : selectedDepartment === 'Servicio Comunitario' ? (
-              // Custom Servicio Comunitario Form
-              <form onSubmit={handleServicioComunitarioSubmit} className="space-y-6">
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-4 pt-6 border-t border-border mt-6">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setSelectedDepartment('')}
+                  className="flex-1"
+                >
+                  Cambiar Departamento
+                </Button>
+                <Button type="submit" className="flex-1 bg-secondary text-white hover:bg-secondary/90">
+                  Enviar Reporte
+                </Button>
+              </div>
+            </form>
+            ) : selectedDepartment === 'Biblioteca' ? (
+              // Custom Biblioteca Form
+              <form onSubmit={handleBibliotecaSubmit} className="space-y-6">
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold text-foreground">Nuevo Reporte de Servicio Comunitario</h2>
+                  <h2 className="text-2xl font-bold text-foreground">Nuevo Reporte de Biblioteca</h2>
                 </div>
 
                 {/* Mes Reportado */}
                 <div className="space-y-2 max-w-xs">
-                  <label htmlFor="comunitario-month" className="block text-sm font-semibold text-foreground">
+                  <label htmlFor="biblioteca-month" className="block text-sm font-semibold text-foreground">
                     Mes Reportado
                   </label>
                   <select
-                    id="comunitario-month"
+                    id="biblioteca-month"
                     required
                     className="w-full rounded-lg border border-border bg-input px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
-                    value={selectedComunitarioMonth}
-                    onChange={(e) => setSelectedComunitarioMonth(e.target.value)}
+                    value={selectedBibliotecaMonth}
+                    onChange={(e) => setSelectedBibliotecaMonth(e.target.value)}
                   >
                     {[
                       'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -786,213 +1124,120 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                   </select>
                 </div>
 
-                {/* Tabs Navigation */}
-                <div className="flex border-b border-border mt-6">
-                  <button
-                    type="button"
-                    className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${
-                      comunitarioActiveTab === 'academia'
-                        ? 'border-primary text-primary'
-                        : 'border-transparent text-muted-foreground hover:text-foreground'
-                    }`}
-                    onClick={() => setComunitarioActiveTab('academia')}
-                  >
-                    Academia (Requisito de Graduación)
-                  </button>
-                  <button
-                    type="button"
-                    className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${
-                      comunitarioActiveTab === 'extension'
-                        ? 'border-primary text-primary'
-                        : 'border-transparent text-muted-foreground hover:text-foreground'
-                    }`}
-                    onClick={() => setComunitarioActiveTab('extension')}
-                  >
-                    Extensión (Labor Social)
-                  </button>
+                {/* Checkbox "Nada que reportar" */}
+                <div className="flex items-center space-x-2 bg-muted/40 p-4 rounded-lg border border-border">
+                  <input
+                    type="checkbox"
+                    id="nothing-biblioteca"
+                    className="rounded border-border text-primary focus:ring-primary h-4 w-4 cursor-pointer"
+                    checked={nothingToReportBiblioteca}
+                    onChange={(e) => setNothingToReportBiblioteca(e.target.checked)}
+                  />
+                  <label htmlFor="nothing-biblioteca" className="text-sm font-medium text-foreground select-none cursor-pointer">
+                    Nada que reportar en este mes
+                  </label>
                 </div>
 
-                {/* Tab content: Academia */}
-                {comunitarioActiveTab === 'academia' && (
-                  <div className="space-y-6 pt-4">
-                    <div className="flex items-center space-x-2 bg-muted/40 p-4 rounded-lg border border-border">
-                      <input
-                        type="checkbox"
-                        id="nothing-academia"
-                        className="rounded border-border text-primary focus:ring-primary h-4 w-4 cursor-pointer"
-                        checked={nothingToReportAcademia}
-                        onChange={(e) => setNothingToReportAcademia(e.target.checked)}
-                      />
-                      <label htmlFor="nothing-academia" className="text-sm font-medium text-foreground select-none cursor-pointer">
-                        Nada que reportar en esta sección (Academia)
-                      </label>
-                    </div>
-
-                    {!nothingToReportAcademia && (
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center">
-                          <h3 className="text-lg font-bold text-foreground">Actividades Requisito de Grado</h3>
-                          <Button
-                            type="button"
-                            onClick={handleAddAcademiaItem}
-                            variant="outline"
-                            className="text-xs flex items-center gap-1 py-1.5 px-3 border border-border bg-card text-foreground hover:bg-muted"
-                          >
-                            + Agregar Actividad
-                          </Button>
+                {!nothingToReportBiblioteca && (
+                  <div className="space-y-6">
+                    {/* Fixed Activity Section */}
+                    <div className="p-5 rounded-xl border border-border bg-muted/20 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="report-fixed-activity"
+                            className="rounded border-border text-primary focus:ring-primary h-4 w-4 cursor-pointer"
+                            checked={reportFixedActivity}
+                            onChange={(e) => setReportFixedActivity(e.target.checked)}
+                          />
+                          <label htmlFor="report-fixed-activity" className="text-sm font-bold text-primary select-none cursor-pointer leading-tight">
+                            Atención de los estudiantes via on line y presencial
+                          </label>
                         </div>
+                        <span className="text-[10px] bg-primary/10 text-primary font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                          Actividad Fija
+                        </span>
+                      </div>
 
-                        <div className="space-y-4">
-                          {academiaItems.map((item, idx) => (
-                            <div key={idx} className="p-5 rounded-xl border border-border bg-muted/20 space-y-4 relative">
-                              <div className="flex justify-between items-center">
-                                <span className="text-xs font-bold text-muted-foreground uppercase">Actividad #{idx + 1}</span>
-                                {academiaItems.length > 1 && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleRemoveAcademiaItem(idx)}
-                                    className="text-red-500 hover:text-red-700 text-xs font-semibold"
-                                  >
-                                    Eliminar
-                                  </button>
-                                )}
-                              </div>
-
-                              <div className="grid grid-cols-1 gap-4">
-                                <div className="space-y-1">
-                                  <label className="text-xs font-semibold text-muted-foreground">Descripción de la Actividad</label>
-                                  <input
-                                    type="text"
-                                    required
-                                    placeholder="Ej. Proyecto de alfabetización digital comunitaria..."
-                                    className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
-                                    value={item.descripcion_item}
-                                    onChange={(e) => handleAcademiaItemChange(idx, 'descripcion_item', e.target.value)}
-                                  />
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-muted-foreground">Nro de Actividades Realizadas</label>
-                                    <input
-                                      type="number"
-                                      min={0}
-                                      required
-                                      className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
-                                      value={item.actividades_realizadas}
-                                      onChange={(e) => handleAcademiaItemChange(idx, 'actividades_realizadas', parseInt(e.target.value) || 0)}
-                                    />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-muted-foreground">Estudiantes Atendidos</label>
-                                    <input
-                                      type="number"
-                                      min={0}
-                                      required
-                                      className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
-                                      value={item.estudiantes_atendidos}
-                                      onChange={(e) => handleAcademiaItemChange(idx, 'estudiantes_atendidos', parseInt(e.target.value) || 0)}
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
+                      <div className="grid grid-cols-1 gap-2">
+                        <div className="space-y-1">
+                          <label className="text-xs font-semibold text-muted-foreground">Estudiantes Atendidos</label>
+                          <input
+                            type="number"
+                            min={0}
+                            required={reportFixedActivity}
+                            disabled={!reportFixedActivity}
+                            className="w-full sm:max-w-xs rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none disabled:opacity-50 disabled:bg-muted"
+                            value={fixedActivityAtendidos}
+                            onChange={(e) => setFixedActivityAtendidos(parseInt(e.target.value) || 0)}
+                          />
                         </div>
                       </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Tab content: Extension */}
-                {comunitarioActiveTab === 'extension' && (
-                  <div className="space-y-6 pt-4">
-                    <div className="flex items-center space-x-2 bg-muted/40 p-4 rounded-lg border border-border">
-                      <input
-                        type="checkbox"
-                        id="nothing-extension"
-                        className="rounded border-border text-primary focus:ring-primary h-4 w-4 cursor-pointer"
-                        checked={nothingToReportExtension}
-                        onChange={(e) => setNothingToReportExtension(e.target.checked)}
-                      />
-                      <label htmlFor="nothing-extension" className="text-sm font-medium text-foreground select-none cursor-pointer">
-                        Nada que reportar en esta sección (Extensión)
-                      </label>
                     </div>
 
-                    {!nothingToReportExtension && (
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center">
-                          <h3 className="text-lg font-bold text-foreground">Actividades de Labor Social</h3>
-                          <Button
-                            type="button"
-                            onClick={handleAddExtensionItem}
-                            variant="outline"
-                            className="text-xs flex items-center gap-1 py-1.5 px-3 border border-border bg-card text-foreground hover:bg-muted"
-                          >
-                            + Agregar Actividad
-                          </Button>
-                        </div>
+                    {/* Custom Activities Section */}
+                    <div className="space-y-4 pt-4 border-t border-border">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-base font-bold text-foreground">Otras Actividades</h3>
+                        <Button
+                          type="button"
+                          onClick={handleAddBibliotecaCustomItem}
+                          variant="outline"
+                          className="text-xs flex items-center gap-1 py-1.5 px-3 border border-border bg-card text-foreground hover:bg-muted"
+                        >
+                          + Agregar Otra Actividad
+                        </Button>
+                      </div>
 
-                        <div className="space-y-4">
-                          {extensionItems.map((item, idx) => (
-                            <div key={idx} className="p-5 rounded-xl border border-border bg-muted/20 space-y-4 relative">
-                              <div className="flex justify-between items-center">
-                                <span className="text-xs font-bold text-muted-foreground uppercase">Actividad #{idx + 1}</span>
-                                {extensionItems.length > 1 && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleRemoveExtensionItem(idx)}
-                                    className="text-red-500 hover:text-red-700 text-xs font-semibold"
-                                  >
-                                    Eliminar
-                                  </button>
-                                )}
+                      <div className="space-y-4">
+                        {bibliotecaCustomItems.map((item, idx) => (
+                          <div key={idx} className="p-5 rounded-xl border border-border bg-muted/20 space-y-4 relative">
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs font-bold text-muted-foreground uppercase">Actividad Adicional #{idx + 1}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveBibliotecaCustomItem(idx)}
+                                className="text-red-500 hover:text-red-700 text-xs font-semibold"
+                              >
+                                Eliminar
+                              </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4">
+                              <div className="space-y-1">
+                                <label className="text-xs font-semibold text-muted-foreground">Descripción de la Actividad</label>
+                                <input
+                                  type="text"
+                                  required
+                                  placeholder="Ej. Taller de inducción a bases de datos científicas..."
+                                  className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                  value={item.descripcion_item}
+                                  onChange={(e) => handleBibliotecaCustomItemChange(idx, 'descripcion_item', e.target.value)}
+                                />
                               </div>
 
-                              <div className="grid grid-cols-1 gap-4">
-                                <div className="space-y-1">
-                                  <label className="text-xs font-semibold text-muted-foreground">Descripción de la Actividad</label>
-                                  <input
-                                    type="text"
-                                    required
-                                    placeholder="Ej. Taller de educación financiera básica..."
-                                    className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
-                                    value={item.descripcion_item}
-                                    onChange={(e) => handleExtensionItemChange(idx, 'descripcion_item', e.target.value)}
-                                  />
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-muted-foreground">Actividades Realizadas</label>
-                                    <input
-                                      type="number"
-                                      min={0}
-                                      required
-                                      className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
-                                      value={item.actividades_realizadas}
-                                      onChange={(e) => handleExtensionItemChange(idx, 'actividades_realizadas', parseInt(e.target.value) || 0)}
-                                    />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-muted-foreground">Beneficiarios</label>
-                                    <input
-                                      type="number"
-                                      min={0}
-                                      required
-                                      className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
-                                      value={item.beneficiarios}
-                                      onChange={(e) => handleExtensionItemChange(idx, 'beneficiarios', parseInt(e.target.value) || 0)}
-                                    />
-                                  </div>
-                                </div>
+                              <div className="space-y-1">
+                                <label className="text-xs font-semibold text-muted-foreground">Estudiantes Atendidos</label>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  required
+                                  className="w-full sm:max-w-xs rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                  value={item.estudiantes_atendidos}
+                                  onChange={(e) => handleBibliotecaCustomItemChange(idx, 'estudiantes_atendidos', parseInt(e.target.value) || 0)}
+                                />
                               </div>
                             </div>
-                          ))}
-                        </div>
+                          </div>
+                        ))}
+                        {bibliotecaCustomItems.length === 0 && (
+                          <p className="text-xs text-muted-foreground text-center py-4 bg-muted/10 rounded-lg border border-dashed border-border">
+                            No se han registrado otras actividades este mes. Haz clic en el botón de arriba para agregar una.
+                          </p>
+                        )}
                       </div>
-                    )}
+                    </div>
                   </div>
                 )}
 
@@ -1012,77 +1257,77 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                 </div>
               </form>
             ) : (
-              // Generic Form for other departments
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Title Field */}
-                <div className="space-y-2">
-                  <label htmlFor="title" className="block text-sm font-semibold text-foreground">
-                    Título del Reporte
-                  </label>
-                  <input
-                    id="title"
-                    type="text"
-                    required
-                    placeholder="Describe brevemente el tema..."
-                    className="w-full rounded-lg border border-border bg-input px-4 py-2 text-foreground placeholder-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  />
-                </div>
+            // Generic Form for other departments
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Title Field */}
+              <div className="space-y-2">
+                <label htmlFor="title" className="block text-sm font-semibold text-foreground">
+                  Título del Reporte
+                </label>
+                <input
+                  id="title"
+                  type="text"
+                  required
+                  placeholder="Describe brevemente el tema..."
+                  className="w-full rounded-lg border border-border bg-input px-4 py-2 text-foreground placeholder-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                />
+              </div>
 
-                {/* Category Field */}
-                <div className="space-y-2">
-                  <label htmlFor="category" className="block text-sm font-semibold text-foreground">
-                    Categoría
-                  </label>
-                  <select
-                    id="category"
-                    required
-                    className="w-full rounded-lg border border-border bg-input px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  >
-                    <option value="">Selecciona una categoría</option>
-                    {CATEGORIES.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              {/* Category Field */}
+              <div className="space-y-2">
+                <label htmlFor="category" className="block text-sm font-semibold text-foreground">
+                  Categoría
+                </label>
+                <select
+                  id="category"
+                  required
+                  className="w-full rounded-lg border border-border bg-input px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                >
+                  <option value="">Selecciona una categoría</option>
+                  {CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                {/* Description Field */}
-                <div className="space-y-2">
-                  <label htmlFor="description" className="block text-sm font-semibold text-foreground">
-                    Descripción Detallada
-                  </label>
-                  <textarea
-                    id="description"
-                    required
-                    placeholder="Describe el contenido del reporte con detalle..."
-                    rows={6}
-                    className="w-full rounded-lg border border-border bg-input px-4 py-2 text-foreground placeholder-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none resize-none"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  />
-                </div>
+              {/* Description Field */}
+              <div className="space-y-2">
+                <label htmlFor="description" className="block text-sm font-semibold text-foreground">
+                  Descripción Detallada
+                </label>
+                <textarea
+                  id="description"
+                  required
+                  placeholder="Describe el contenido del reporte con detalle..."
+                  rows={6}
+                  className="w-full rounded-lg border border-border bg-input px-4 py-2 text-foreground placeholder-muted-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none resize-none"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                />
+              </div>
 
-                {/* Submit Buttons */}
-                <div className="flex gap-4 pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setSelectedDepartment('')}
-                    className="flex-1"
-                  >
-                    Cambiar Departamento
-                  </Button>
-                  <Button type="submit" className="flex-1 bg-secondary text-white hover:bg-secondary/90">
-                    Enviar Reporte
-                  </Button>
-                </div>
-              </form>
-            )}
+              {/* Submit Buttons */}
+              <div className="flex gap-4 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setSelectedDepartment('')}
+                  className="flex-1"
+                >
+                  Cambiar Departamento
+                </Button>
+                <Button type="submit" className="flex-1 bg-secondary text-white hover:bg-secondary/90">
+                  Enviar Reporte
+                </Button>
+              </div>
+            </form>
+          )}
         </div>
       </main>
     </div>
