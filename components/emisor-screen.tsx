@@ -392,7 +392,6 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
   // States for Biblioteca
   const [selectedBibliotecaMonth, setSelectedBibliotecaMonth] = useState('Enero')
   const [nothingToReportBiblioteca, setNothingToReportBiblioteca] = useState(false)
-  const [reportFixedActivity, setReportFixedActivity] = useState(true)
   const [fixedActivityAtendidos, setFixedActivityAtendidos] = useState(0)
 
   interface BibliotecaCustomItem {
@@ -430,14 +429,12 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     const detalles = []
 
     if (!nothingToReportBiblioteca) {
-      if (reportFixedActivity) {
-        detalles.push({
-          descripcion_item: "Atención de los estudiantes via on line y presencial",
-          variables: {
-            estudiantes_atendidos: fixedActivityAtendidos
-          }
-        })
-      }
+      detalles.push({
+        descripcion_item: "Atención de los estudiantes via on line y presencial",
+        variables: {
+          estudiantes_atendidos: fixedActivityAtendidos
+        }
+      })
 
       bibliotecaCustomItems.forEach((item) => {
         if (item.descripcion_item.trim() !== '') {
@@ -469,7 +466,6 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     // Reset Form
     setSelectedBibliotecaMonth('Enero')
     setNothingToReportBiblioteca(false)
-    setReportFixedActivity(true)
     setFixedActivityAtendidos(0)
     setBibliotecaCustomItems([])
   }
@@ -1143,18 +1139,9 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                     {/* Fixed Activity Section */}
                     <div className="p-5 rounded-xl border border-border bg-muted/20 space-y-4">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            id="report-fixed-activity"
-                            className="rounded border-border text-primary focus:ring-primary h-4 w-4 cursor-pointer"
-                            checked={reportFixedActivity}
-                            onChange={(e) => setReportFixedActivity(e.target.checked)}
-                          />
-                          <label htmlFor="report-fixed-activity" className="text-sm font-bold text-primary select-none cursor-pointer leading-tight">
-                            Atención de los estudiantes via on line y presencial
-                          </label>
-                        </div>
+                        <span className="text-sm font-bold text-primary select-none leading-tight">
+                          Atención de los estudiantes via on line y presencial
+                        </span>
                         <span className="text-[10px] bg-primary/10 text-primary font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
                           Actividad Fija
                         </span>
@@ -1166,9 +1153,8 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                           <input
                             type="number"
                             min={0}
-                            required={reportFixedActivity}
-                            disabled={!reportFixedActivity}
-                            className="w-full sm:max-w-xs rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none disabled:opacity-50 disabled:bg-muted"
+                            required
+                            className="w-full sm:max-w-xs rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
                             value={fixedActivityAtendidos}
                             onChange={(e) => setFixedActivityAtendidos(parseInt(e.target.value) || 0)}
                           />
