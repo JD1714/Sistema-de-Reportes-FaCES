@@ -26,8 +26,8 @@ const DEPARTMENTS = [
     name: 'Servicio Comunitario',
     icon: '🤝',
     targets: [
-      { sheet: 'Academia', block: '' },
-      { sheet: 'Extensión', block: 'Labor Social' },
+      { sheet: 'Academia', block: 'Servicio comunitario (requisito para graduarse)' },
+      { sheet: 'Extensión', block: 'Servicio comunitario (labor social)' },
     ],
   },
   {
@@ -272,6 +272,121 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
       'Doctorado en Gestión de Investigación y Desarrollo': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
       'Doctorado en Seguridad Social': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
     })
+  }
+
+  // States for Servicio Comunitario
+  const [selectedComunitarioMonth, setSelectedComunitarioMonth] = useState('Enero')
+  const [comunitarioActiveTab, setComunitarioActiveTab] = useState<'academia' | 'extension'>('academia')
+  
+  const [nothingToReportAcademia, setNothingToReportAcademia] = useState(false)
+  const [nothingToReportExtension, setNothingToReportExtension] = useState(false)
+
+  interface AcademiaItem {
+    descripcion_item: string
+    estudiantes_asignados: number
+    proyectos_culminados: number
+  }
+
+  interface ExtensionItem {
+    descripcion_item: string
+    actividades_realizadas: number
+    beneficiarios: number
+  }
+
+  const [academiaItems, setAcademiaItems] = useState<AcademiaItem[]>([
+    { descripcion_item: '', estudiantes_asignados: 0, proyectos_culminados: 0 }
+  ])
+
+  const [extensionItems, setExtensionItems] = useState<ExtensionItem[]>([
+    { descripcion_item: '', actividades_realizadas: 0, beneficiarios: 0 }
+  ])
+
+  const handleAddAcademiaItem = () => {
+    setAcademiaItems((prev) => [
+      ...prev,
+      { descripcion_item: '', estudiantes_asignados: 0, proyectos_culminados: 0 }
+    ])
+  }
+
+  const handleRemoveAcademiaItem = (index: number) => {
+    setAcademiaItems((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const handleAcademiaItemChange = (index: number, field: keyof AcademiaItem, value: string | number) => {
+    setAcademiaItems((prev) => {
+      const updated = [...prev]
+      updated[index] = {
+        ...updated[index],
+        [field]: value
+      }
+      return updated
+    })
+  }
+
+  const handleAddExtensionItem = () => {
+    setExtensionItems((prev) => [
+      ...prev,
+      { descripcion_item: '', actividades_realizadas: 0, beneficiarios: 0 }
+    ])
+  }
+
+  const handleRemoveExtensionItem = (index: number) => {
+    setExtensionItems((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const handleExtensionItemChange = (index: number, field: keyof ExtensionItem, value: string | number) => {
+    setExtensionItems((prev) => {
+      const updated = [...prev]
+      updated[index] = {
+        ...updated[index],
+        [field]: value
+      }
+      return updated
+    })
+  }
+
+  const handleServicioComunitarioSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+
+    const payload = {
+      departamento_emisor: "Servicio Comunitario",
+      mes_reportado: selectedComunitarioMonth,
+      registros: [
+        {
+          hoja_destino: "Academia",
+          bloque: "Servicio comunitario (requisito para graduarse)",
+          detalles: nothingToReportAcademia ? [] : academiaItems.map((item) => ({
+            descripcion_item: item.descripcion_item,
+            variables: {
+              estudiantes_asignados: item.estudiantes_asignados,
+              proyectos_culminados: item.proyectos_culminados
+            }
+          }))
+        },
+        {
+          hoja_destino: "Extensión",
+          bloque: "Servicio comunitario (labor social)",
+          detalles: nothingToReportExtension ? [] : extensionItems.map((item) => ({
+            descripcion_item: item.descripcion_item,
+            variables: {
+              actividades_realizadas: item.actividades_realizadas,
+              beneficiarios: item.beneficiarios
+            }
+          }))
+        }
+      ]
+    }
+
+    console.log('Servicio Comunitario Payload:', payload)
+    alert('Reporte de Servicio Comunitario enviado correctamente (Simulación):\n' + JSON.stringify(payload, null, 2))
+
+    // Reset Form
+    setSelectedComunitarioMonth('Enero')
+    setComunitarioActiveTab('academia')
+    setNothingToReportAcademia(false)
+    setNothingToReportExtension(false)
+    setAcademiaItems([{ descripcion_item: '', estudiantes_asignados: 0, proyectos_culminados: 0 }])
+    setExtensionItems([{ descripcion_item: '', actividades_realizadas: 0, beneficiarios: 0 }])
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -628,6 +743,261 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
 
                 {/* Action Buttons */}
                 <div className="flex gap-4 pt-6 border-t border-border">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setSelectedDepartment('')}
+                    className="flex-1"
+                  >
+                    Cambiar Departamento
+                  </Button>
+                  <Button type="submit" className="flex-1 bg-secondary text-white hover:bg-secondary/90">
+                    Enviar Reporte
+                  </Button>
+                </div>
+              </form>
+            ) : selectedDepartment === 'Servicio Comunitario' ? (
+              // Custom Servicio Comunitario Form
+              <form onSubmit={handleServicioComunitarioSubmit} className="space-y-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold text-foreground">Nuevo Reporte de Servicio Comunitario</h2>
+                </div>
+
+                {/* Mes Reportado */}
+                <div className="space-y-2 max-w-xs">
+                  <label htmlFor="comunitario-month" className="block text-sm font-semibold text-foreground">
+                    Mes Reportado
+                  </label>
+                  <select
+                    id="comunitario-month"
+                    required
+                    className="w-full rounded-lg border border-border bg-input px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                    value={selectedComunitarioMonth}
+                    onChange={(e) => setSelectedComunitarioMonth(e.target.value)}
+                  >
+                    {[
+                      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+                    ].map((month) => (
+                      <option key={month} value={month}>
+                        {month}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Tabs Navigation */}
+                <div className="flex border-b border-border mt-6">
+                  <button
+                    type="button"
+                    className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${
+                      comunitarioActiveTab === 'academia'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-muted-foreground hover:text-foreground'
+                    }`}
+                    onClick={() => setComunitarioActiveTab('academia')}
+                  >
+                    Academia (Requisito de Graduación)
+                  </button>
+                  <button
+                    type="button"
+                    className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${
+                      comunitarioActiveTab === 'extension'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-muted-foreground hover:text-foreground'
+                    }`}
+                    onClick={() => setComunitarioActiveTab('extension')}
+                  >
+                    Extensión (Labor Social)
+                  </button>
+                </div>
+
+                {/* Tab content: Academia */}
+                {comunitarioActiveTab === 'academia' && (
+                  <div className="space-y-6 pt-4">
+                    <div className="flex items-center space-x-2 bg-muted/40 p-4 rounded-lg border border-border">
+                      <input
+                        type="checkbox"
+                        id="nothing-academia"
+                        className="rounded border-border text-primary focus:ring-primary h-4 w-4 cursor-pointer"
+                        checked={nothingToReportAcademia}
+                        onChange={(e) => setNothingToReportAcademia(e.target.checked)}
+                      />
+                      <label htmlFor="nothing-academia" className="text-sm font-medium text-foreground select-none cursor-pointer">
+                        Nada que reportar en esta sección (Academia)
+                      </label>
+                    </div>
+
+                    {!nothingToReportAcademia && (
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <h3 className="text-lg font-bold text-foreground">Proyectos Requisito de Grado</h3>
+                          <Button
+                            type="button"
+                            onClick={handleAddAcademiaItem}
+                            variant="outline"
+                            className="text-xs flex items-center gap-1 py-1.5 px-3 border border-border bg-card text-foreground hover:bg-muted"
+                          >
+                            + Agregar Proyecto
+                          </Button>
+                        </div>
+
+                        <div className="space-y-4">
+                          {academiaItems.map((item, idx) => (
+                            <div key={idx} className="p-5 rounded-xl border border-border bg-muted/20 space-y-4 relative">
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs font-bold text-muted-foreground uppercase">Proyecto #{idx + 1}</span>
+                                {academiaItems.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveAcademiaItem(idx)}
+                                    className="text-red-500 hover:text-red-700 text-xs font-semibold"
+                                  >
+                                    Eliminar
+                                  </button>
+                                )}
+                              </div>
+
+                              <div className="grid grid-cols-1 gap-4">
+                                <div className="space-y-1">
+                                  <label className="text-xs font-semibold text-muted-foreground">Descripción del Proyecto</label>
+                                  <input
+                                    type="text"
+                                    required
+                                    placeholder="Ej. Proyecto de alfabetización digital comunitaria..."
+                                    className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                    value={item.descripcion_item}
+                                    onChange={(e) => handleAcademiaItemChange(idx, 'descripcion_item', e.target.value)}
+                                  />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-muted-foreground">Estudiantes Asignados</label>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      required
+                                      className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                      value={item.estudiantes_asignados}
+                                      onChange={(e) => handleAcademiaItemChange(idx, 'estudiantes_asignados', parseInt(e.target.value) || 0)}
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-muted-foreground">Proyectos Culminados</label>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      required
+                                      className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                      value={item.proyectos_culminados}
+                                      onChange={(e) => handleAcademiaItemChange(idx, 'proyectos_culminados', parseInt(e.target.value) || 0)}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Tab content: Extension */}
+                {comunitarioActiveTab === 'extension' && (
+                  <div className="space-y-6 pt-4">
+                    <div className="flex items-center space-x-2 bg-muted/40 p-4 rounded-lg border border-border">
+                      <input
+                        type="checkbox"
+                        id="nothing-extension"
+                        className="rounded border-border text-primary focus:ring-primary h-4 w-4 cursor-pointer"
+                        checked={nothingToReportExtension}
+                        onChange={(e) => setNothingToReportExtension(e.target.checked)}
+                      />
+                      <label htmlFor="nothing-extension" className="text-sm font-medium text-foreground select-none cursor-pointer">
+                        Nada que reportar en esta sección (Extensión)
+                      </label>
+                    </div>
+
+                    {!nothingToReportExtension && (
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <h3 className="text-lg font-bold text-foreground">Actividades de Labor Social</h3>
+                          <Button
+                            type="button"
+                            onClick={handleAddExtensionItem}
+                            variant="outline"
+                            className="text-xs flex items-center gap-1 py-1.5 px-3 border border-border bg-card text-foreground hover:bg-muted"
+                          >
+                            + Agregar Actividad
+                          </Button>
+                        </div>
+
+                        <div className="space-y-4">
+                          {extensionItems.map((item, idx) => (
+                            <div key={idx} className="p-5 rounded-xl border border-border bg-muted/20 space-y-4 relative">
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs font-bold text-muted-foreground uppercase">Actividad #{idx + 1}</span>
+                                {extensionItems.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveExtensionItem(idx)}
+                                    className="text-red-500 hover:text-red-700 text-xs font-semibold"
+                                  >
+                                    Eliminar
+                                  </button>
+                                )}
+                              </div>
+
+                              <div className="grid grid-cols-1 gap-4">
+                                <div className="space-y-1">
+                                  <label className="text-xs font-semibold text-muted-foreground">Descripción de la Actividad</label>
+                                  <input
+                                    type="text"
+                                    required
+                                    placeholder="Ej. Taller de educación financiera básica..."
+                                    className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                    value={item.descripcion_item}
+                                    onChange={(e) => handleExtensionItemChange(idx, 'descripcion_item', e.target.value)}
+                                  />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-muted-foreground">Actividades Realizadas</label>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      required
+                                      className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                      value={item.actividades_realizadas}
+                                      onChange={(e) => handleExtensionItemChange(idx, 'actividades_realizadas', parseInt(e.target.value) || 0)}
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-muted-foreground">Beneficiarios</label>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      required
+                                      className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                      value={item.beneficiarios}
+                                      onChange={(e) => handleExtensionItemChange(idx, 'beneficiarios', parseInt(e.target.value) || 0)}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex gap-4 pt-6 border-t border-border mt-6">
                   <Button
                     type="button"
                     variant="outline"
