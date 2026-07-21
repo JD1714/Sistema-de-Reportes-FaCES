@@ -831,14 +831,14 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                     {!nothingToReportAcademia && (
                       <div className="space-y-4">
                         <div className="flex justify-between items-center">
-                          <h3 className="text-lg font-bold text-foreground">Proyectos Requisito de Grado</h3>
+                          <h3 className="text-lg font-bold text-foreground">Actividades Requisito de Grado</h3>
                           <Button
                             type="button"
                             onClick={handleAddAcademiaItem}
                             variant="outline"
                             className="text-xs flex items-center gap-1 py-1.5 px-3 border border-border bg-card text-foreground hover:bg-muted"
                           >
-                            + Agregar Proyecto
+                            + Agregar Actividad
                           </Button>
                         </div>
 
@@ -846,7 +846,7 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                           {academiaItems.map((item, idx) => (
                             <div key={idx} className="p-5 rounded-xl border border-border bg-muted/20 space-y-4 relative">
                               <div className="flex justify-between items-center">
-                                <span className="text-xs font-bold text-muted-foreground uppercase">Proyecto #{idx + 1}</span>
+                                <span className="text-xs font-bold text-muted-foreground uppercase">Actividad #{idx + 1}</span>
                                 {academiaItems.length > 1 && (
                                   <button
                                     type="button"
@@ -860,7 +860,7 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
 
                               <div className="grid grid-cols-1 gap-4">
                                 <div className="space-y-1">
-                                  <label className="text-xs font-semibold text-muted-foreground">Descripción del Proyecto</label>
+                                  <label className="text-xs font-semibold text-muted-foreground">Descripción de la Actividad</label>
                                   <input
                                     type="text"
                                     required
@@ -884,7 +884,7 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                                     />
                                   </div>
                                   <div className="space-y-1">
-                                    <label className="text-xs font-semibold text-muted-foreground">Proyectos Culminados</label>
+                                    <label className="text-xs font-semibold text-muted-foreground">Actividades Culminadas</label>
                                     <input
                                       type="number"
                                       min={0}
