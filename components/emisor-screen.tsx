@@ -40,7 +40,7 @@ const DEPARTMENTS = [
     id: 'desarrollo-estudiantil',
     name: 'Desarrollo Estudiantil',
     icon: '🌱',
-    targets: [{ sheet: 'Estudiantes', block: 'Atención y Asesoría' }],
+    targets: [{ sheet: 'Estudiantes', block: 'Servicios de Orientación y Asesoría Académica' }],
   },
   {
     id: 'coordinacion-extension',
@@ -468,6 +468,125 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     setNothingToReportBiblioteca(false)
     setFixedActivityAtendidos(0)
     setBibliotecaCustomItems([])
+  }
+
+  // States for Desarrollo Estudiantil
+  const [selectedDesarrolloMonth, setSelectedDesarrolloMonth] = useState('Enero')
+  const [nothingToReportDesarrollo, setNothingToReportDesarrollo] = useState(false)
+
+  const FIXED_DESARROLLO_REPORTS = [
+    "Atención psicológica estudiantil",
+    "Evaluación psicológica - vocacional (Resolución 158)",
+    "Asesoramiento de Bachilleres que solicitan información sobre los posibles cambios, estudios simultaneos, atención Psicológica, normas de permanencias, entre otros",
+    "Evaluación psicológica grupal"
+  ]
+
+  const [desarrolloFixedReports, setDesarrolloFixedReports] = useState<{
+    [key: string]: { servicios_prestados: number; estudiantes_beneficiados: number }
+  }>({
+    "Atención psicológica estudiantil": { servicios_prestados: 0, estudiantes_beneficiados: 0 },
+    "Evaluación psicológica - vocacional (Resolución 158)": { servicios_prestados: 0, estudiantes_beneficiados: 0 },
+    "Asesoramiento de Bachilleres que solicitan información sobre los posibles cambios, estudios simultaneos, atención Psicológica, normas de permanencias, entre otros": { servicios_prestados: 0, estudiantes_beneficiados: 0 },
+    "Evaluación psicológica grupal": { servicios_prestados: 0, estudiantes_beneficiados: 0 }
+  })
+
+  interface DesarrolloSpecialItem {
+    descripcion_item: string
+    servicios_prestados: number
+    estudiantes_beneficiados: number
+  }
+
+  const [desarrolloSpecialItems, setDesarrolloSpecialItems] = useState<DesarrolloSpecialItem[]>([])
+
+  const handleDesarrolloFixedChange = (reportName: string, field: 'servicios_prestados' | 'estudiantes_beneficiados', value: number) => {
+    setDesarrolloFixedReports((prev) => ({
+      ...prev,
+      [reportName]: {
+        ...prev[reportName],
+        [field]: value >= 0 ? value : 0
+      }
+    }))
+  }
+
+  const handleAddDesarrolloSpecialItem = () => {
+    setDesarrolloSpecialItems((prev) => [
+      ...prev,
+      { descripcion_item: '', servicios_prestados: 0, estudiantes_beneficiados: 0 }
+    ])
+  }
+
+  const handleRemoveDesarrolloSpecialItem = (index: number) => {
+    setDesarrolloSpecialItems((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const handleDesarrolloSpecialItemChange = (index: number, field: keyof DesarrolloSpecialItem, value: string | number) => {
+    setDesarrolloSpecialItems((prev) => {
+      const updated = [...prev]
+      updated[index] = {
+        ...updated[index],
+        [field]: value
+      }
+      return updated
+    })
+  }
+
+  const handleDesarrolloSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+
+    const detalles = []
+
+    if (!nothingToReportDesarrollo) {
+      // 1. Add fixed reports
+      FIXED_DESARROLLO_REPORTS.forEach((reportName) => {
+        const data = desarrolloFixedReports[reportName]
+        detalles.push({
+          descripcion_item: reportName,
+          variables: {
+            servicios_prestados: data.servicios_prestados,
+            estudiantes_beneficiados: data.estudiantes_beneficiados
+          }
+        })
+      })
+
+      // 2. Add special reports
+      desarrolloSpecialItems.forEach((item) => {
+        if (item.descripcion_item.trim() !== '') {
+          detalles.push({
+            descripcion_item: item.descripcion_item,
+            variables: {
+              servicios_prestados: item.servicios_prestados,
+              estudiantes_beneficiados: item.estudiantes_beneficiados
+            }
+          })
+        }
+      })
+    }
+
+    const payload = {
+      departamento_emisor: "Desarrollo Estudiantil",
+      mes_reportado: selectedDesarrolloMonth,
+      registros: [
+        {
+          hoja_destino: "Estudiantes",
+          bloque: "Servicios de Orientación y Asesoría Académica",
+          detalles: detalles
+        }
+      ]
+    }
+
+    console.log('Desarrollo Estudiantil Payload:', payload)
+    alert('Reporte de Desarrollo Estudiantil enviado correctamente (Simulación):\n' + JSON.stringify(payload, null, 2))
+
+    // Reset Form
+    setSelectedDesarrolloMonth('Enero')
+    setNothingToReportDesarrollo(false)
+    setDesarrolloFixedReports({
+      "Atención psicológica estudiantil": { servicios_prestados: 0, estudiantes_beneficiados: 0 },
+      "Evaluación psicológica - vocacional (Resolución 158)": { servicios_prestados: 0, estudiantes_beneficiados: 0 },
+      "Asesoramiento de Bachilleres que solicitan información sobre los posibles cambios, estudios simultaneos, atención Psicológica, normas de permanencias, entre otros": { servicios_prestados: 0, estudiantes_beneficiados: 0 },
+      "Evaluación psicológica grupal": { servicios_prestados: 0, estudiantes_beneficiados: 0 }
+    })
+    setDesarrolloSpecialItems([])
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -1220,6 +1339,191 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                         {bibliotecaCustomItems.length === 0 && (
                           <p className="text-xs text-muted-foreground text-center py-4 bg-muted/10 rounded-lg border border-dashed border-border">
                             No se han registrado otras actividades este mes. Haz clic en el botón de arriba para agregar una.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex gap-4 pt-6 border-t border-border mt-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setSelectedDepartment('')}
+                    className="flex-1"
+                  >
+                    Cambiar Departamento
+                  </Button>
+                  <Button type="submit" className="flex-1 bg-secondary text-white hover:bg-secondary/90">
+                    Enviar Reporte
+                  </Button>
+                </div>
+              </form>
+            ) : selectedDepartment === 'Desarrollo Estudiantil' ? (
+              // Custom Desarrollo Estudiantil Form
+              <form onSubmit={handleDesarrolloSubmit} className="space-y-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold text-foreground">Nuevo Reporte de Desarrollo Estudiantil</h2>
+                </div>
+
+                {/* Mes Reportado */}
+                <div className="space-y-2 max-w-xs">
+                  <label htmlFor="desarrollo-month" className="block text-sm font-semibold text-foreground">
+                    Mes Reportado
+                  </label>
+                  <select
+                    id="desarrollo-month"
+                    required
+                    className="w-full rounded-lg border border-border bg-input px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                    value={selectedDesarrolloMonth}
+                    onChange={(e) => setSelectedDesarrolloMonth(e.target.value)}
+                  >
+                    {[
+                      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+                    ].map((month) => (
+                      <option key={month} value={month}>
+                        {month}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Checkbox "Nada que reportar" */}
+                <div className="flex items-center space-x-2 bg-muted/40 p-4 rounded-lg border border-border">
+                  <input
+                    type="checkbox"
+                    id="nothing-desarrollo"
+                    className="rounded border-border text-primary focus:ring-primary h-4 w-4 cursor-pointer"
+                    checked={nothingToReportDesarrollo}
+                    onChange={(e) => setNothingToReportDesarrollo(e.target.checked)}
+                  />
+                  <label htmlFor="nothing-desarrollo" className="text-sm font-medium text-foreground select-none cursor-pointer">
+                    Nada que reportar en este mes
+                  </label>
+                </div>
+
+                {!nothingToReportDesarrollo && (
+                  <div className="space-y-6">
+                    {/* Fixed Reports Section */}
+                    <div className="space-y-4 pt-2">
+                      <h3 className="text-lg font-bold text-foreground">Servicios de Orientación y Asesoría (Reportes Fijos)</h3>
+                      
+                      <div className="space-y-4">
+                        {FIXED_DESARROLLO_REPORTS.map((reportName, idx) => {
+                          const reportData = desarrolloFixedReports[reportName]
+                          return (
+                            <div key={idx} className="p-5 rounded-xl border border-border bg-muted/20 space-y-3">
+                              <div className="flex justify-between items-start gap-4">
+                                <h4 className="font-bold text-sm text-primary leading-snug">{reportName}</h4>
+                                <span className="text-[10px] bg-primary/10 text-primary font-bold px-2 py-0.5 rounded-full uppercase tracking-wider whitespace-nowrap">
+                                  Reporte Fijo #{idx + 1}
+                                </span>
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                                <div className="space-y-1">
+                                  <label className="text-xs font-semibold text-muted-foreground">Servicios Prestados</label>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    required
+                                    className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                    value={reportData.servicios_prestados}
+                                    onChange={(e) => handleDesarrolloFixedChange(reportName, 'servicios_prestados', parseInt(e.target.value) || 0)}
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-xs font-semibold text-muted-foreground">Estudiantes Beneficiados</label>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    required
+                                    className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                    value={reportData.estudiantes_beneficiados}
+                                    onChange={(e) => handleDesarrolloFixedChange(reportName, 'estudiantes_beneficiados', parseInt(e.target.value) || 0)}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Special Reports Section */}
+                    <div className="space-y-4 pt-4 border-t border-border">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-base font-bold text-foreground">Reportes Especiales (Actividades Extraordinarias)</h3>
+                        <Button
+                          type="button"
+                          onClick={handleAddDesarrolloSpecialItem}
+                          variant="outline"
+                          className="text-xs flex items-center gap-1 py-1.5 px-3 border border-border bg-card text-foreground hover:bg-muted"
+                        >
+                          + Agregar Reporte Especial
+                        </Button>
+                      </div>
+
+                      <div className="space-y-4">
+                        {desarrolloSpecialItems.map((item, idx) => (
+                          <div key={idx} className="p-5 rounded-xl border border-border bg-muted/20 space-y-4 relative">
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs font-bold text-muted-foreground uppercase">Reporte Especial #{idx + 1}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveDesarrolloSpecialItem(idx)}
+                                className="text-red-500 hover:text-red-700 text-xs font-semibold"
+                              >
+                                Eliminar
+                              </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4">
+                              <div className="space-y-1">
+                                <label className="text-xs font-semibold text-muted-foreground">Descripción del Reporte Especial</label>
+                                <input
+                                  type="text"
+                                  required
+                                  placeholder="Ej. Taller de manejo de ansiedad..."
+                                  className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                  value={item.descripcion_item}
+                                  onChange={(e) => handleDesarrolloSpecialItemChange(idx, 'descripcion_item', e.target.value)}
+                                />
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                  <label className="text-xs font-semibold text-muted-foreground">Servicios Prestados</label>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    required
+                                    className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                    value={item.servicios_prestados}
+                                    onChange={(e) => handleDesarrolloSpecialItemChange(idx, 'servicios_prestados', parseInt(e.target.value) || 0)}
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <label className="text-xs font-semibold text-muted-foreground">Estudiantes Beneficiados</label>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    required
+                                    className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                    value={item.estudiantes_beneficiados}
+                                    onChange={(e) => handleDesarrolloSpecialItemChange(idx, 'estudiantes_beneficiados', parseInt(e.target.value) || 0)}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        {desarrolloSpecialItems.length === 0 && (
+                          <p className="text-xs text-muted-foreground text-center py-4 bg-muted/10 rounded-lg border border-dashed border-border">
+                            No se han registrado reportes especiales adicionales este mes. Haz clic en el botón de arriba si deseas agregar uno.
                           </p>
                         )}
                       </div>
