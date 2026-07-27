@@ -47,9 +47,9 @@ const DEPARTMENTS = [
     name: 'Coordinación de Extensión',
     icon: '📣',
     targets: [
-      { sheet: 'Extensión', block: 'Deporte, Eventos, Socio Cultural' },
-      { sheet: 'Estudiantes', block: 'Deporte' },
-      { sheet: 'Academia', block: 'Malla Curricular' },
+      { sheet: 'Extensión', block: 'Actividades Socio-culturales' },
+      { sheet: 'Estudiantes', block: 'Actividades deportivas' },
+      { sheet: 'Academia', block: 'Actualización de malla curricular' },
     ],
   },
   {
@@ -587,6 +587,153 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
       "Evaluación psicológica grupal": { servicios_prestados: 0, estudiantes_beneficiados: 0 }
     })
     setDesarrolloSpecialItems([])
+  }
+
+  // States for Coordinación de Extensión
+  const [selectedExtensionMonth, setSelectedExtensionMonth] = useState('Enero')
+  const [extensionActiveTab, setExtensionActiveTab] = useState<'sociocultural' | 'deportiva' | 'mallacurricular'>('sociocultural')
+
+  const [nothingToReportSociocultural, setNothingToReportSociocultural] = useState(false)
+  const [nothingToReportDeportiva, setNothingToReportDeportiva] = useState(false)
+  const [nothingToReportMallaCurricular, setNothingToReportMallaCurricular] = useState(false)
+
+  interface SocioculturalItem {
+    descripcion_item: string
+    nro_eventos: number
+    usuarios_beneficiados: number
+  }
+
+  interface DeportivaItem {
+    descripcion_item: string
+    nro_eventos_realizados: number
+    nro_beneficiarios: number
+  }
+
+  interface MallaCurricularItem {
+    descripcion_item: string
+    nro_actividades: number
+  }
+
+  const [socioculturalItems, setSocioculturalItems] = useState<SocioculturalItem[]>([
+    { descripcion_item: '', nro_eventos: 0, usuarios_beneficiados: 0 }
+  ])
+
+  const [deportivaItems, setDeportivaItems] = useState<DeportivaItem[]>([
+    { descripcion_item: '', nro_eventos_realizados: 0, nro_beneficiarios: 0 }
+  ])
+
+  const [mallaCurricularItems, setMallaCurricularItems] = useState<MallaCurricularItem[]>([
+    { descripcion_item: '', nro_actividades: 0 }
+  ])
+
+  // Handlers for Sociocultural
+  const handleAddSocioculturalItem = () => {
+    setSocioculturalItems((prev) => [
+      ...prev,
+      { descripcion_item: '', nro_eventos: 0, usuarios_beneficiados: 0 }
+    ])
+  }
+  const handleRemoveSocioculturalItem = (index: number) => {
+    setSocioculturalItems((prev) => prev.filter((_, i) => i !== index))
+  }
+  const handleSocioculturalItemChange = (index: number, field: keyof SocioculturalItem, value: string | number) => {
+    setSocioculturalItems((prev) => {
+      const updated = [...prev]
+      updated[index] = { ...updated[index], [field]: value }
+      return updated
+    })
+  }
+
+  // Handlers for Deportiva
+  const handleAddDeportivaItem = () => {
+    setDeportivaItems((prev) => [
+      ...prev,
+      { descripcion_item: '', nro_eventos_realizados: 0, nro_beneficiarios: 0 }
+    ])
+  }
+  const handleRemoveDeportivaItem = (index: number) => {
+    setDeportivaItems((prev) => prev.filter((_, i) => i !== index))
+  }
+  const handleDeportivaItemChange = (index: number, field: keyof DeportivaItem, value: string | number) => {
+    setDeportivaItems((prev) => {
+      const updated = [...prev]
+      updated[index] = { ...updated[index], [field]: value }
+      return updated
+    })
+  }
+
+  // Handlers for Malla Curricular
+  const handleAddMallaCurricularItem = () => {
+    setMallaCurricularItems((prev) => [
+      ...prev,
+      { descripcion_item: '', nro_actividades: 0 }
+    ])
+  }
+  const handleRemoveMallaCurricularItem = (index: number) => {
+    setMallaCurricularItems((prev) => prev.filter((_, i) => i !== index))
+  }
+  const handleMallaCurricularItemChange = (index: number, field: keyof MallaCurricularItem, value: string | number) => {
+    setMallaCurricularItems((prev) => {
+      const updated = [...prev]
+      updated[index] = { ...updated[index], [field]: value }
+      return updated
+    })
+  }
+
+  const handleCoordinacionExtensionSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+
+    const payload = {
+      departamento_emisor: "Coordinación de Extensión",
+      mes_reportado: selectedExtensionMonth,
+      registros: [
+        {
+          hoja_destino: "Extensión",
+          bloque: "Actividades Socio-culturales",
+          detalles: nothingToReportSociocultural ? [] : socioculturalItems.map((item) => ({
+            descripcion_item: item.descripcion_item,
+            variables: {
+              nro_eventos: item.nro_eventos,
+              usuarios_beneficiados: item.usuarios_beneficiados
+            }
+          }))
+        },
+        {
+          hoja_destino: "Estudiantes",
+          bloque: "Actividades deportivas",
+          detalles: nothingToReportDeportiva ? [] : deportivaItems.map((item) => ({
+            descripcion_item: item.descripcion_item,
+            variables: {
+              nro_eventos_realizados: item.nro_eventos_realizados,
+              nro_beneficiarios: item.nro_beneficiarios
+            }
+          }))
+        },
+        {
+          hoja_destino: "Academia",
+          bloque: "Actualización de malla curricular",
+          detalles: nothingToReportMallaCurricular ? [] : mallaCurricularItems.map((item) => ({
+            descripcion_item: item.descripcion_item,
+            variables: {
+              nro_actividades: item.nro_actividades
+            }
+          }))
+        }
+      ]
+    }
+
+    console.log('Coordinación de Extensión Payload:', payload)
+    alert('Reporte de Coordinación de Extensión enviado correctamente (Simulación):\n' + JSON.stringify(payload, null, 2))
+
+    // Reset Form
+    setSelectedExtensionMonth('Enero')
+    setExtensionActiveTab('sociocultural')
+    setNothingToReportSociocultural(false)
+    setNothingToReportDeportiva(false)
+    setNothingToReportMallaCurricular(false)
+    setSocioculturalItems([{ descripcion_item: '', nro_eventos: 0, usuarios_beneficiados: 0 }])
+    setDeportivaItems([{ descripcion_item: '', nro_eventos_realizados: 0, nro_beneficiarios: 0 }])
+    setMallaCurricularItems([{ descripcion_item: '', nro_actividades: 0 }])
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -1528,6 +1675,351 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                         )}
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex gap-4 pt-6 border-t border-border mt-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setSelectedDepartment('')}
+                    className="flex-1"
+                  >
+                    Cambiar Departamento
+                  </Button>
+                  <Button type="submit" className="flex-1 bg-secondary text-white hover:bg-secondary/90">
+                    Enviar Reporte
+                  </Button>
+                </div>
+              </form>
+            ) : selectedDepartment === 'Coordinación de Extensión' ? (
+              // Custom Coordinación de Extensión Form
+              <form onSubmit={handleCoordinacionExtensionSubmit} className="space-y-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold text-foreground">Nuevo Reporte de Coordinación de Extensión</h2>
+                </div>
+
+                {/* Mes Reportado */}
+                <div className="space-y-2 max-w-xs">
+                  <label htmlFor="extension-month" className="block text-sm font-semibold text-foreground">
+                    Mes Reportado
+                  </label>
+                  <select
+                    id="extension-month"
+                    required
+                    className="w-full rounded-lg border border-border bg-input px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                    value={selectedExtensionMonth}
+                    onChange={(e) => setSelectedExtensionMonth(e.target.value)}
+                  >
+                    {[
+                      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+                    ].map((month) => (
+                      <option key={month} value={month}>
+                        {month}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Tabs Navigation */}
+                <div className="flex flex-wrap border-b border-border mt-6">
+                  <button
+                    type="button"
+                    className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${
+                      extensionActiveTab === 'sociocultural'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-muted-foreground hover:text-foreground'
+                    }`}
+                    onClick={() => setExtensionActiveTab('sociocultural')}
+                  >
+                    Actividades Socio-culturales (Extensión)
+                  </button>
+                  <button
+                    type="button"
+                    className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${
+                      extensionActiveTab === 'deportiva'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-muted-foreground hover:text-foreground'
+                    }`}
+                    onClick={() => setExtensionActiveTab('deportiva')}
+                  >
+                    Actividades Deportivas (Estudiantes)
+                  </button>
+                  <button
+                    type="button"
+                    className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${
+                      extensionActiveTab === 'mallacurricular'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-muted-foreground hover:text-foreground'
+                    }`}
+                    onClick={() => setExtensionActiveTab('mallacurricular')}
+                  >
+                    Actualización Malla Curricular (Academia)
+                  </button>
+                </div>
+
+                {/* Tab content: Socio-culturales */}
+                {extensionActiveTab === 'sociocultural' && (
+                  <div className="space-y-6 pt-4">
+                    <div className="flex items-center space-x-2 bg-muted/40 p-4 rounded-lg border border-border">
+                      <input
+                        type="checkbox"
+                        id="nothing-sociocultural"
+                        className="rounded border-border text-primary focus:ring-primary h-4 w-4 cursor-pointer"
+                        checked={nothingToReportSociocultural}
+                        onChange={(e) => setNothingToReportSociocultural(e.target.checked)}
+                      />
+                      <label htmlFor="nothing-sociocultural" className="text-sm font-medium text-foreground select-none cursor-pointer">
+                        Nada que reportar en esta sección (Actividades Socio-culturales)
+                      </label>
+                    </div>
+
+                    {!nothingToReportSociocultural && (
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <h3 className="text-lg font-bold text-foreground">Actividades Socio-culturales</h3>
+                          <Button
+                            type="button"
+                            onClick={handleAddSocioculturalItem}
+                            variant="outline"
+                            className="text-xs flex items-center gap-1 py-1.5 px-3 border border-border bg-card text-foreground hover:bg-muted"
+                          >
+                            + Agregar Actividad
+                          </Button>
+                        </div>
+
+                        <div className="space-y-4">
+                          {socioculturalItems.map((item, idx) => (
+                            <div key={idx} className="p-5 rounded-xl border border-border bg-muted/20 space-y-4 relative">
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs font-bold text-muted-foreground uppercase">Actividad #{idx + 1}</span>
+                                {socioculturalItems.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveSocioculturalItem(idx)}
+                                    className="text-red-500 hover:text-red-700 text-xs font-semibold"
+                                  >
+                                    Eliminar
+                                  </button>
+                                )}
+                              </div>
+
+                              <div className="grid grid-cols-1 gap-4">
+                                <div className="space-y-1">
+                                  <label className="text-xs font-semibold text-muted-foreground">Descripción de la Actividad</label>
+                                  <input
+                                    type="text"
+                                    required
+                                    placeholder="Ej. Festival de Teatro de FACES..."
+                                    className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                    value={item.descripcion_item}
+                                    onChange={(e) => handleSocioculturalItemChange(idx, 'descripcion_item', e.target.value)}
+                                  />
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                  <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-muted-foreground">Nro. de Eventos</label>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      required
+                                      className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                      value={item.nro_eventos}
+                                      onChange={(e) => handleSocioculturalItemChange(idx, 'nro_eventos', parseInt(e.target.value) || 0)}
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-muted-foreground">Usuarios Beneficiados</label>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      required
+                                      className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                      value={item.usuarios_beneficiados}
+                                      onChange={(e) => handleSocioculturalItemChange(idx, 'usuarios_beneficiados', parseInt(e.target.value) || 0)}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Tab content: Deportivas */}
+                {extensionActiveTab === 'deportiva' && (
+                  <div className="space-y-6 pt-4">
+                    <div className="flex items-center space-x-2 bg-muted/40 p-4 rounded-lg border border-border">
+                      <input
+                        type="checkbox"
+                        id="nothing-deportiva"
+                        className="rounded border-border text-primary focus:ring-primary h-4 w-4 cursor-pointer"
+                        checked={nothingToReportDeportiva}
+                        onChange={(e) => setNothingToReportDeportiva(e.target.checked)}
+                      />
+                      <label htmlFor="nothing-deportiva" className="text-sm font-medium text-foreground select-none cursor-pointer">
+                        Nada que reportar en esta sección (Actividades Deportivas)
+                      </label>
+                    </div>
+
+                    {!nothingToReportDeportiva && (
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <h3 className="text-lg font-bold text-foreground">Actividades Deportivas</h3>
+                          <Button
+                            type="button"
+                            onClick={handleAddDeportivaItem}
+                            variant="outline"
+                            className="text-xs flex items-center gap-1 py-1.5 px-3 border border-border bg-card text-foreground hover:bg-muted"
+                          >
+                            + Agregar Actividad
+                          </Button>
+                        </div>
+
+                        <div className="space-y-4">
+                          {deportivaItems.map((item, idx) => (
+                            <div key={idx} className="p-5 rounded-xl border border-border bg-muted/20 space-y-4 relative">
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs font-bold text-muted-foreground uppercase">Actividad #{idx + 1}</span>
+                                {deportivaItems.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveDeportivaItem(idx)}
+                                    className="text-red-500 hover:text-red-700 text-xs font-semibold"
+                                  >
+                                    Eliminar
+                                  </button>
+                                )}
+                              </div>
+
+                              <div className="grid grid-cols-1 gap-4">
+                                <div className="space-y-1">
+                                  <label className="text-xs font-semibold text-muted-foreground">Descripción de la Actividad</label>
+                                  <input
+                                    type="text"
+                                    required
+                                    placeholder="Ej. Torneo de Fútbol Sala Universitario..."
+                                    className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                    value={item.descripcion_item}
+                                    onChange={(e) => handleDeportivaItemChange(idx, 'descripcion_item', e.target.value)}
+                                  />
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                  <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-muted-foreground">Nro. de Eventos Realizados</label>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      required
+                                      className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                      value={item.nro_eventos_realizados}
+                                      onChange={(e) => handleDeportivaItemChange(idx, 'nro_eventos_realizados', parseInt(e.target.value) || 0)}
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-muted-foreground">Nro. de Beneficiarios</label>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      required
+                                      className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                      value={item.nro_beneficiarios}
+                                      onChange={(e) => handleDeportivaItemChange(idx, 'nro_beneficiarios', parseInt(e.target.value) || 0)}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Tab content: Malla Curricular */}
+                {extensionActiveTab === 'mallacurricular' && (
+                  <div className="space-y-6 pt-4">
+                    <div className="flex items-center space-x-2 bg-muted/40 p-4 rounded-lg border border-border">
+                      <input
+                        type="checkbox"
+                        id="nothing-mallacurricular"
+                        className="rounded border-border text-primary focus:ring-primary h-4 w-4 cursor-pointer"
+                        checked={nothingToReportMallaCurricular}
+                        onChange={(e) => setNothingToReportMallaCurricular(e.target.checked)}
+                      />
+                      <label htmlFor="nothing-mallacurricular" className="text-sm font-medium text-foreground select-none cursor-pointer">
+                        Nada que reportar en esta sección (Actualización Malla Curricular)
+                      </label>
+                    </div>
+
+                    {!nothingToReportMallaCurricular && (
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <h3 className="text-lg font-bold text-foreground">Actualización Malla Curricular</h3>
+                          <Button
+                            type="button"
+                            onClick={handleAddMallaCurricularItem}
+                            variant="outline"
+                            className="text-xs flex items-center gap-1 py-1.5 px-3 border border-border bg-card text-foreground hover:bg-muted"
+                          >
+                            + Agregar Actividad
+                          </Button>
+                        </div>
+
+                        <div className="space-y-4">
+                          {mallaCurricularItems.map((item, idx) => (
+                            <div key={idx} className="p-5 rounded-xl border border-border bg-muted/20 space-y-4 relative">
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs font-bold text-muted-foreground uppercase">Actividad #{idx + 1}</span>
+                                {mallaCurricularItems.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveMallaCurricularItem(idx)}
+                                    className="text-red-500 hover:text-red-700 text-xs font-semibold"
+                                  >
+                                    Eliminar
+                                  </button>
+                                )}
+                              </div>
+
+                              <div className="grid grid-cols-1 gap-4">
+                                <div className="space-y-1">
+                                  <label className="text-xs font-semibold text-muted-foreground">Descripción de la Actividad</label>
+                                  <input
+                                    type="text"
+                                    required
+                                    placeholder="Ej. Mesas de trabajo para el nuevo pensum..."
+                                    className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                    value={item.descripcion_item}
+                                    onChange={(e) => handleMallaCurricularItemChange(idx, 'descripcion_item', e.target.value)}
+                                  />
+                                </div>
+
+                                <div className="space-y-1 sm:max-w-xs">
+                                  <label className="text-xs font-semibold text-muted-foreground">Nro. de Actividades</label>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    required
+                                    className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                    value={item.nro_actividades}
+                                    onChange={(e) => handleMallaCurricularItemChange(idx, 'nro_actividades', parseInt(e.target.value) || 0)}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
