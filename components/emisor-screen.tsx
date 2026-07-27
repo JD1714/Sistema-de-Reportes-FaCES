@@ -146,7 +146,7 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     console.log('Pregrado Payload:', payload)
     alert('Reporte de Pregrado enviado correctamente (Simulación):\n' + JSON.stringify(payload, null, 2))
 
-    // Reset form
+    // Reset form & return to department selection
     setSelectedMonth('Enero')
     setPregradoCareers({
       'Administradores y Contadores Públicos': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
@@ -157,6 +157,7 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
       'Trabajadores Sociales': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
       'Antropólogos': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
     })
+    setSelectedDepartment('')
   }
 
   // States for Control de Estudios - Postgrado
@@ -272,6 +273,7 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
       'Doctorado en Gestión de Investigación y Desarrollo': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
       'Doctorado en Seguridad Social': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
     })
+    setSelectedDepartment('')
   }
 
   // States for Servicio Comunitario
@@ -396,13 +398,14 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     console.log('Servicio Comunitario Payload:', payload)
     alert('Reporte de Servicio Comunitario enviado correctamente (Simulación):\n' + JSON.stringify(payload, null, 2))
 
-    // Reset Form
+    // Reset Form & return to department selection
     setSelectedComunitarioMonth('Enero')
     setComunitarioActiveTab('academia')
     setNothingToReportAcademia(false)
     setNothingToReportExtension(false)
     setAcademiaItems([{ descripcion_item: '', actividades_realizadas: 0, estudiantes_atendidos: 0 }])
     setExtensionItems([{ descripcion_item: '', actividades_realizadas: 0, beneficiarios: 0 }])
+    setSelectedDepartment('')
   }
 
   // States for Biblioteca
@@ -479,11 +482,12 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     console.log('Biblioteca Payload:', payload)
     alert('Reporte de Biblioteca enviado correctamente (Simulación):\n' + JSON.stringify(payload, null, 2))
 
-    // Reset Form
+    // Reset Form & return to department selection
     setSelectedBibliotecaMonth('Enero')
     setNothingToReportBiblioteca(false)
     setFixedActivityAtendidos(0)
     setBibliotecaCustomItems([])
+    setSelectedDepartment('')
   }
 
   // States for Desarrollo Estudiantil
@@ -593,7 +597,7 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     console.log('Desarrollo Estudiantil Payload:', payload)
     alert('Reporte de Desarrollo Estudiantil enviado correctamente (Simulación):\n' + JSON.stringify(payload, null, 2))
 
-    // Reset Form
+    // Reset Form & return to department selection
     setSelectedDesarrolloMonth('Enero')
     setNothingToReportDesarrollo(false)
     setDesarrolloFixedReports({
@@ -603,6 +607,7 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
       "Evaluación psicológica grupal": { servicios_prestados: 0, estudiantes_beneficiados: 0 }
     })
     setDesarrolloSpecialItems([])
+    setSelectedDepartment('')
   }
 
   // States for Coordinación de Extensión
@@ -760,7 +765,7 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     console.log('Coordinación de Extensión Payload:', payload)
     alert('Reporte de Coordinación de Extensión enviado correctamente (Simulación):\n' + JSON.stringify(payload, null, 2))
 
-    // Reset Form
+    // Reset Form & return to department selection
     setSelectedExtensionMonth('Enero')
     setExtensionActiveTab('sociocultural')
     setNothingToReportSociocultural(false)
@@ -769,12 +774,14 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     setSocioculturalItems([{ descripcion_item: '', nro_eventos: 0, usuarios_beneficiados: 0 }])
     setDeportivaItems([{ descripcion_item: '', nro_eventos_realizados: 0, nro_beneficiarios: 0 }])
     setMallaCurricularItems([{ descripcion_item: '', nro_actividades: 0 }])
+    setSelectedDepartment('')
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     console.log('Report sent from:', selectedDepartment, 'Data:', formData)
     setFormData({ title: '', description: '', category: '' })
+    setSelectedDepartment('')
     alert('Reporte enviado correctamente')
   }
 
