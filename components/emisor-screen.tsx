@@ -348,6 +348,22 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
   const handleServicioComunitarioSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
+    // Validation: ensure all tabs have been answered (either "Nada que reportar" checked or at least one item filled)
+    const isAcademiaCompleted = nothingToReportAcademia || academiaItems.some(item => item.descripcion_item.trim() !== '')
+    const isExtensionCompleted = nothingToReportExtension || extensionItems.some(item => item.descripcion_item.trim() !== '')
+
+    if (!isAcademiaCompleted || !isExtensionCompleted) {
+      const missing = []
+      if (!isAcademiaCompleted) missing.push('Academia (Requisito de Graduación)')
+      if (!isExtensionCompleted) missing.push('Extensión (Labor Social)')
+
+      if (!isAcademiaCompleted) setComunitarioActiveTab('academia')
+      else if (!isExtensionCompleted) setComunitarioActiveTab('extension')
+
+      alert(`Atención: Debes contestar todas las pestañas antes de enviar el reporte.\n\nFalta por contestar:\n- ${missing.join('\n- ')}\n\n(Agrega al menos una actividad o marca 'Nada que reportar en esta sección').`)
+      return
+    }
+
     const payload = {
       departamento_emisor: "Servicio Comunitario",
       mes_reportado: selectedComunitarioMonth,
@@ -682,6 +698,25 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
 
   const handleCoordinacionExtensionSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Validation: ensure all tabs have been answered
+    const isSocioculturalCompleted = nothingToReportSociocultural || socioculturalItems.some(item => item.descripcion_item.trim() !== '')
+    const isDeportivaCompleted = nothingToReportDeportiva || deportivaItems.some(item => item.descripcion_item.trim() !== '')
+    const isMallaCurricularCompleted = nothingToReportMallaCurricular || mallaCurricularItems.some(item => item.descripcion_item.trim() !== '')
+
+    if (!isSocioculturalCompleted || !isDeportivaCompleted || !isMallaCurricularCompleted) {
+      const missing = []
+      if (!isSocioculturalCompleted) missing.push('Actividades Socio-culturales (Extensión)')
+      if (!isDeportivaCompleted) missing.push('Actividades Deportivas (Estudiantes)')
+      if (!isMallaCurricularCompleted) missing.push('Actualización Malla Curricular (Academia)')
+
+      if (!isSocioculturalCompleted) setExtensionActiveTab('sociocultural')
+      else if (!isDeportivaCompleted) setExtensionActiveTab('deportiva')
+      else if (!isMallaCurricularCompleted) setExtensionActiveTab('mallacurricular')
+
+      alert(`Atención: Debes contestar todas las pestañas antes de enviar el reporte.\n\nFalta por contestar:\n- ${missing.join('\n- ')}\n\n(Agrega al menos una actividad o marca 'Nada que reportar en esta sección').`)
+      return
+    }
 
     const payload = {
       departamento_emisor: "Coordinación de Extensión",
@@ -1137,23 +1172,33 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
               <div className="flex border-b border-border mt-6">
                 <button
                   type="button"
-                  className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${comunitarioActiveTab === 'academia'
+                  className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors flex items-center ${comunitarioActiveTab === 'academia'
                       ? 'border-primary text-primary'
                       : 'border-transparent text-muted-foreground hover:text-foreground'
                     }`}
                   onClick={() => setComunitarioActiveTab('academia')}
                 >
                   Academia (Requisito de Graduación)
+                  {(nothingToReportAcademia || academiaItems.some(i => i.descripcion_item.trim() !== '')) ? (
+                    <span className="ml-2 text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold px-1.5 py-0.5 rounded">✓</span>
+                  ) : (
+                    <span className="ml-2 text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold px-1.5 py-0.5 rounded">•</span>
+                  )}
                 </button>
                 <button
                   type="button"
-                  className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${comunitarioActiveTab === 'extension'
+                  className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors flex items-center ${comunitarioActiveTab === 'extension'
                       ? 'border-primary text-primary'
                       : 'border-transparent text-muted-foreground hover:text-foreground'
                     }`}
                   onClick={() => setComunitarioActiveTab('extension')}
                 >
                   Extensión (Labor Social)
+                  {(nothingToReportExtension || extensionItems.some(i => i.descripcion_item.trim() !== '')) ? (
+                    <span className="ml-2 text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold px-1.5 py-0.5 rounded">✓</span>
+                  ) : (
+                    <span className="ml-2 text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold px-1.5 py-0.5 rounded">•</span>
+                  )}
                 </button>
               </div>
 
@@ -1727,7 +1772,7 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                 <div className="flex flex-wrap border-b border-border mt-6">
                   <button
                     type="button"
-                    className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${
+                    className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors flex items-center ${
                       extensionActiveTab === 'sociocultural'
                         ? 'border-primary text-primary'
                         : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -1735,10 +1780,15 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                     onClick={() => setExtensionActiveTab('sociocultural')}
                   >
                     Actividades Socio-culturales (Extensión)
+                    {(nothingToReportSociocultural || socioculturalItems.some(i => i.descripcion_item.trim() !== '')) ? (
+                      <span className="ml-2 text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold px-1.5 py-0.5 rounded">✓</span>
+                    ) : (
+                      <span className="ml-2 text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold px-1.5 py-0.5 rounded">•</span>
+                    )}
                   </button>
                   <button
                     type="button"
-                    className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${
+                    className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors flex items-center ${
                       extensionActiveTab === 'deportiva'
                         ? 'border-primary text-primary'
                         : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -1746,10 +1796,15 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                     onClick={() => setExtensionActiveTab('deportiva')}
                   >
                     Actividades Deportivas (Estudiantes)
+                    {(nothingToReportDeportiva || deportivaItems.some(i => i.descripcion_item.trim() !== '')) ? (
+                      <span className="ml-2 text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold px-1.5 py-0.5 rounded">✓</span>
+                    ) : (
+                      <span className="ml-2 text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold px-1.5 py-0.5 rounded">•</span>
+                    )}
                   </button>
                   <button
                     type="button"
-                    className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${
+                    className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors flex items-center ${
                       extensionActiveTab === 'mallacurricular'
                         ? 'border-primary text-primary'
                         : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -1757,6 +1812,11 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                     onClick={() => setExtensionActiveTab('mallacurricular')}
                   >
                     Actualización Malla Curricular (Academia)
+                    {(nothingToReportMallaCurricular || mallaCurricularItems.some(i => i.descripcion_item.trim() !== '')) ? (
+                      <span className="ml-2 text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold px-1.5 py-0.5 rounded">✓</span>
+                    ) : (
+                      <span className="ml-2 text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold px-1.5 py-0.5 rounded">•</span>
+                    )}
                   </button>
                 </div>
 
