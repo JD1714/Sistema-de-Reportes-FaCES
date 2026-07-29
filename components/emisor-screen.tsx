@@ -54,9 +54,12 @@ const DEPARTMENTS = [
   },
   {
     id: 'compras',
-    name: 'Compras',
+    name: 'Departamento de Compras',
     icon: '🛒',
-    targets: [{ sheet: 'Otros Gastos y Conservación', block: '' }],
+    targets: [
+      { sheet: 'Otros Gastos de Funcionamiento', block: 'Gestión administrativa' },
+      { sheet: 'Otros Gastos de Funcionamiento', block: 'Conservaciòn y mantenimiento de infraestructura' },
+    ],
   },
   {
     id: 'extension-profesional',
@@ -774,6 +777,124 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     setSocioculturalItems([{ descripcion_item: '', nro_eventos: 0, usuarios_beneficiados: 0 }])
     setDeportivaItems([{ descripcion_item: '', nro_eventos_realizados: 0, nro_beneficiarios: 0 }])
     setMallaCurricularItems([{ descripcion_item: '', nro_actividades: 0 }])
+    setSelectedDepartment('')
+  }
+
+  // States for Departamento de Compras
+  const [selectedComprasMonth, setSelectedComprasMonth] = useState('Enero')
+  const [comprasActiveTab, setComprasActiveTab] = useState<'gestion' | 'mantenimiento'>('gestion')
+
+  const [nothingToReportGestion, setNothingToReportGestion] = useState(false)
+  const [nothingToReportMantenimiento, setNothingToReportMantenimiento] = useState(false)
+
+  interface ComprasItem {
+    descripcion_item: string
+    nro_actividad: number
+    nro_beneficiados: number
+  }
+
+  const [gestionItems, setGestionItems] = useState<ComprasItem[]>([
+    { descripcion_item: '', nro_actividad: 0, nro_beneficiados: 0 }
+  ])
+
+  const [mantenimientoItems, setMantenimientoItems] = useState<ComprasItem[]>([
+    { descripcion_item: '', nro_actividad: 0, nro_beneficiados: 0 }
+  ])
+
+  // Handlers for Gestión Administrativa
+  const handleAddGestionItem = () => {
+    setGestionItems((prev) => [
+      ...prev,
+      { descripcion_item: '', nro_actividad: 0, nro_beneficiados: 0 }
+    ])
+  }
+  const handleRemoveGestionItem = (index: number) => {
+    setGestionItems((prev) => prev.filter((_, i) => i !== index))
+  }
+  const handleGestionItemChange = (index: number, field: keyof ComprasItem, value: string | number) => {
+    setGestionItems((prev) => {
+      const updated = [...prev]
+      updated[index] = { ...updated[index], [field]: value }
+      return updated
+    })
+  }
+
+  // Handlers for Mantenimiento
+  const handleAddMantenimientoItem = () => {
+    setMantenimientoItems((prev) => [
+      ...prev,
+      { descripcion_item: '', nro_actividad: 0, nro_beneficiados: 0 }
+    ])
+  }
+  const handleRemoveMantenimientoItem = (index: number) => {
+    setMantenimientoItems((prev) => prev.filter((_, i) => i !== index))
+  }
+  const handleMantenimientoItemChange = (index: number, field: keyof ComprasItem, value: string | number) => {
+    setMantenimientoItems((prev) => {
+      const updated = [...prev]
+      updated[index] = { ...updated[index], [field]: value }
+      return updated
+    })
+  }
+
+  const handleComprasSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+
+    // Validation: ensure all tabs have been answered
+    const isGestionCompleted = nothingToReportGestion || gestionItems.some(item => item.descripcion_item.trim() !== '')
+    const isMantenimientoCompleted = nothingToReportMantenimiento || mantenimientoItems.some(item => item.descripcion_item.trim() !== '')
+
+    if (!isGestionCompleted || !isMantenimientoCompleted) {
+      const missing = []
+      if (!isGestionCompleted) missing.push('Gestión Administrativa')
+      if (!isMantenimientoCompleted) missing.push('Conservación y Mantenimiento de Infraestructura')
+
+      if (!isGestionCompleted) setComprasActiveTab('gestion')
+      else if (!isMantenimientoCompleted) setComprasActiveTab('mantenimiento')
+
+      alert(`Atención: Debes contestar todas las pestañas antes de enviar el reporte.\n\nFalta por contestar:\n- ${missing.join('\n- ')}\n\n(Agrega al menos una actividad o marca 'Nada que reportar en esta sección').`)
+      return
+    }
+
+    const payload = {
+      departamento_emisor: "Departamento de Compras",
+      mes_reportado: selectedComprasMonth,
+      registros: [
+        {
+          hoja_destino: "Otros Gastos de Funcionamiento",
+          bloque: "Gestión administrativa",
+          detalles: nothingToReportGestion ? [] : gestionItems.map((item) => ({
+            descripcion_item: item.descripcion_item,
+            variables: {
+              nro_actividad: item.nro_actividad,
+              nro_beneficiados: item.nro_beneficiados
+            }
+          }))
+        },
+        {
+          hoja_destino: "Otros Gastos de Funcionamiento",
+          bloque: "Conservaciòn y mantenimiento de infraestructura",
+          detalles: nothingToReportMantenimiento ? [] : mantenimientoItems.map((item) => ({
+            descripcion_item: item.descripcion_item,
+            variables: {
+              nro_actividad: item.nro_actividad,
+              nro_beneficiados: item.nro_beneficiados
+            }
+          }))
+        }
+      ]
+    }
+
+    console.log('Departamento de Compras Payload:', payload)
+    alert('Reporte de Departamento de Compras enviado correctamente (Simulación):\n' + JSON.stringify(payload, null, 2))
+
+    // Reset Form & return to department selection
+    setSelectedComprasMonth('Enero')
+    setComprasActiveTab('gestion')
+    setNothingToReportGestion(false)
+    setNothingToReportMantenimiento(false)
+    setGestionItems([{ descripcion_item: '', nro_actividad: 0, nro_beneficiados: 0 }])
+    setMantenimientoItems([{ descripcion_item: '', nro_actividad: 0, nro_beneficiados: 0 }])
     setSelectedDepartment('')
   }
 
@@ -2080,6 +2201,271 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                                     value={item.nro_actividades}
                                     onChange={(e) => handleMallaCurricularItemChange(idx, 'nro_actividades', parseInt(e.target.value) || 0)}
                                   />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex gap-4 pt-6 border-t border-border mt-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setSelectedDepartment('')}
+                    className="flex-1"
+                  >
+                    Cambiar Departamento
+                  </Button>
+                  <Button type="submit" className="flex-1 bg-secondary text-white hover:bg-secondary/90">
+                    Enviar Reporte
+                  </Button>
+                </div>
+              </form>
+            ) : (selectedDepartment === 'Departamento de Compras' || selectedDepartment === 'Compras' || selectedDepartment === 'compras') ? (
+              // Custom Departamento de Compras Form
+              <form onSubmit={handleComprasSubmit} className="space-y-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold text-foreground">Nuevo Reporte del Departamento de Compras</h2>
+                </div>
+
+                {/* Mes Reportado */}
+                <div className="space-y-2 max-w-xs">
+                  <label htmlFor="compras-month" className="block text-sm font-semibold text-foreground">
+                    Mes Reportado
+                  </label>
+                  <select
+                    id="compras-month"
+                    required
+                    className="w-full rounded-lg border border-border bg-input px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                    value={selectedComprasMonth}
+                    onChange={(e) => setSelectedComprasMonth(e.target.value)}
+                  >
+                    {[
+                      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+                    ].map((month) => (
+                      <option key={month} value={month}>
+                        {month}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Tabs Navigation */}
+                <div className="flex flex-wrap border-b border-border mt-6">
+                  <button
+                    type="button"
+                    className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors flex items-center ${
+                      comprasActiveTab === 'gestion'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-muted-foreground hover:text-foreground'
+                    }`}
+                    onClick={() => setComprasActiveTab('gestion')}
+                  >
+                    Gestión Administrativa
+                    {(nothingToReportGestion || gestionItems.some(i => i.descripcion_item.trim() !== '')) ? (
+                      <span className="ml-2 text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold px-1.5 py-0.5 rounded">✓</span>
+                    ) : (
+                      <span className="ml-2 text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold px-1.5 py-0.5 rounded">•</span>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors flex items-center ${
+                      comprasActiveTab === 'mantenimiento'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-muted-foreground hover:text-foreground'
+                    }`}
+                    onClick={() => setComprasActiveTab('mantenimiento')}
+                  >
+                    Conservación y Mantenimiento de Infraestructura
+                    {(nothingToReportMantenimiento || mantenimientoItems.some(i => i.descripcion_item.trim() !== '')) ? (
+                      <span className="ml-2 text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold px-1.5 py-0.5 rounded">✓</span>
+                    ) : (
+                      <span className="ml-2 text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold px-1.5 py-0.5 rounded">•</span>
+                    )}
+                  </button>
+                </div>
+
+                {/* Tab content: Gestión Administrativa */}
+                {comprasActiveTab === 'gestion' && (
+                  <div className="space-y-6 pt-4">
+                    <div className="flex items-center space-x-2 bg-muted/40 p-4 rounded-lg border border-border">
+                      <input
+                        type="checkbox"
+                        id="nothing-gestion"
+                        className="rounded border-border text-primary focus:ring-primary h-4 w-4 cursor-pointer"
+                        checked={nothingToReportGestion}
+                        onChange={(e) => setNothingToReportGestion(e.target.checked)}
+                      />
+                      <label htmlFor="nothing-gestion" className="text-sm font-medium text-foreground select-none cursor-pointer">
+                        Nada que reportar en esta sección (Gestión Administrativa)
+                      </label>
+                    </div>
+
+                    {!nothingToReportGestion && (
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <h3 className="text-lg font-bold text-foreground">Gestión Administrativa</h3>
+                          <Button
+                            type="button"
+                            onClick={handleAddGestionItem}
+                            variant="outline"
+                            className="text-xs flex items-center gap-1 py-1.5 px-3 border border-border bg-card text-foreground hover:bg-muted"
+                          >
+                            + Agregar Actividad
+                          </Button>
+                        </div>
+
+                        <div className="space-y-4">
+                          {gestionItems.map((item, idx) => (
+                            <div key={idx} className="p-5 rounded-xl border border-border bg-muted/20 space-y-4 relative">
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs font-bold text-muted-foreground uppercase">Actividad #{idx + 1}</span>
+                                {gestionItems.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveGestionItem(idx)}
+                                    className="text-red-500 hover:text-red-700 text-xs font-semibold"
+                                  >
+                                    Eliminar
+                                  </button>
+                                )}
+                              </div>
+
+                              <div className="grid grid-cols-1 gap-4">
+                                <div className="space-y-1">
+                                  <label className="text-xs font-semibold text-muted-foreground">Descripción de la Actividad / Gasto</label>
+                                  <input
+                                    type="text"
+                                    required
+                                    placeholder="Ej. Compra de material de oficina para decanato..."
+                                    className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                    value={item.descripcion_item}
+                                    onChange={(e) => handleGestionItemChange(idx, 'descripcion_item', e.target.value)}
+                                  />
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                  <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-muted-foreground">Nro. de Actividad</label>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      required
+                                      className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                      value={item.nro_actividad}
+                                      onChange={(e) => handleGestionItemChange(idx, 'nro_actividad', parseInt(e.target.value) || 0)}
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-muted-foreground">Nro. de Beneficiados</label>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      required
+                                      className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                      value={item.nro_beneficiados}
+                                      onChange={(e) => handleGestionItemChange(idx, 'nro_beneficiados', parseInt(e.target.value) || 0)}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Tab content: Conservación y Mantenimiento */}
+                {comprasActiveTab === 'mantenimiento' && (
+                  <div className="space-y-6 pt-4">
+                    <div className="flex items-center space-x-2 bg-muted/40 p-4 rounded-lg border border-border">
+                      <input
+                        type="checkbox"
+                        id="nothing-mantenimiento"
+                        className="rounded border-border text-primary focus:ring-primary h-4 w-4 cursor-pointer"
+                        checked={nothingToReportMantenimiento}
+                        onChange={(e) => setNothingToReportMantenimiento(e.target.checked)}
+                      />
+                      <label htmlFor="nothing-mantenimiento" className="text-sm font-medium text-foreground select-none cursor-pointer">
+                        Nada que reportar en esta sección (Conservación y Mantenimiento)
+                      </label>
+                    </div>
+
+                    {!nothingToReportMantenimiento && (
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <h3 className="text-lg font-bold text-foreground">Conservación y Mantenimiento de Infraestructura</h3>
+                          <Button
+                            type="button"
+                            onClick={handleAddMantenimientoItem}
+                            variant="outline"
+                            className="text-xs flex items-center gap-1 py-1.5 px-3 border border-border bg-card text-foreground hover:bg-muted"
+                          >
+                            + Agregar Actividad
+                          </Button>
+                        </div>
+
+                        <div className="space-y-4">
+                          {mantenimientoItems.map((item, idx) => (
+                            <div key={idx} className="p-5 rounded-xl border border-border bg-muted/20 space-y-4 relative">
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs font-bold text-muted-foreground uppercase">Actividad #{idx + 1}</span>
+                                {mantenimientoItems.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveMantenimientoItem(idx)}
+                                    className="text-red-500 hover:text-red-700 text-xs font-semibold"
+                                  >
+                                    Eliminar
+                                  </button>
+                                )}
+                              </div>
+
+                              <div className="grid grid-cols-1 gap-4">
+                                <div className="space-y-1">
+                                  <label className="text-xs font-semibold text-muted-foreground">Descripción de la Actividad / Mantenimiento</label>
+                                  <input
+                                    type="text"
+                                    required
+                                    placeholder="Ej. Reparación de luminarias en pasillos principales..."
+                                    className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                    value={item.descripcion_item}
+                                    onChange={(e) => handleMantenimientoItemChange(idx, 'descripcion_item', e.target.value)}
+                                  />
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                  <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-muted-foreground">Nro. de Actividad</label>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      required
+                                      className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                      value={item.nro_actividad}
+                                      onChange={(e) => handleMantenimientoItemChange(idx, 'nro_actividad', parseInt(e.target.value) || 0)}
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-muted-foreground">Nro. de Beneficiados</label>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      required
+                                      className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                      value={item.nro_beneficiados}
+                                      onChange={(e) => handleMantenimientoItemChange(idx, 'nro_beneficiados', parseInt(e.target.value) || 0)}
+                                    />
+                                  </div>
                                 </div>
                               </div>
                             </div>
