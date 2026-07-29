@@ -65,7 +65,7 @@ const DEPARTMENTS = [
     id: 'extension-profesional',
     name: 'Centro de Extensión Profesional',
     icon: '💼',
-    targets: [{ sheet: 'Acompañamiento Profesional', block: '' }],
+    targets: [{ sheet: 'Extensión', block: 'Acompañamiento Profesional' }],
   },
   {
     id: 'instituto-investigaciones',
@@ -895,6 +895,73 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     setNothingToReportMantenimiento(false)
     setGestionItems([{ descripcion_item: '', nro_actividad: 0, nro_beneficiados: 0 }])
     setMantenimientoItems([{ descripcion_item: '', nro_actividad: 0, nro_beneficiados: 0 }])
+    setSelectedDepartment('')
+  }
+
+  // States for Centro de Extensión Profesional
+  const [selectedProfesionalMonth, setSelectedProfesionalMonth] = useState('Enero')
+  const [nothingToReportProfesional, setNothingToReportProfesional] = useState(false)
+
+  interface ProfesionalItem {
+    descripcion_item: string
+    nro_acompanamientos_realizados: number
+    nro_personas_beneficiadas: number
+  }
+
+  const [profesionalItems, setProfesionalItems] = useState<ProfesionalItem[]>([
+    { descripcion_item: '', nro_acompanamientos_realizados: 0, nro_personas_beneficiadas: 0 }
+  ])
+
+  const handleAddProfesionalItem = () => {
+    setProfesionalItems((prev) => [
+      ...prev,
+      { descripcion_item: '', nro_acompanamientos_realizados: 0, nro_personas_beneficiadas: 0 }
+    ])
+  }
+
+  const handleRemoveProfesionalItem = (index: number) => {
+    setProfesionalItems((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const handleProfesionalItemChange = (index: number, field: keyof ProfesionalItem, value: string | number) => {
+    setProfesionalItems((prev) => {
+      const updated = [...prev]
+      updated[index] = {
+        ...updated[index],
+        [field]: value
+      }
+      return updated
+    })
+  }
+
+  const handleProfesionalSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+
+    const payload = {
+      departamento_emisor: "Centro de Extensión Profesional",
+      mes_reportado: selectedProfesionalMonth,
+      registros: [
+        {
+          hoja_destino: "Extensión",
+          bloque: "Acompañamiento Profesional",
+          detalles: nothingToReportProfesional ? [] : profesionalItems.map((item) => ({
+            descripcion_item: item.descripcion_item,
+            variables: {
+              nro_acompanamientos_realizados: item.nro_acompanamientos_realizados,
+              nro_personas_beneficiadas: item.nro_personas_beneficiadas
+            }
+          }))
+        }
+      ]
+    }
+
+    console.log('Centro de Extensión Profesional Payload:', payload)
+    alert('Reporte de Centro de Extensión Profesional enviado correctamente (Simulación):\n' + JSON.stringify(payload, null, 2))
+
+    // Reset Form & return to department selection
+    setSelectedProfesionalMonth('Enero')
+    setNothingToReportProfesional(false)
+    setProfesionalItems([{ descripcion_item: '', nro_acompanamientos_realizados: 0, nro_personas_beneficiadas: 0 }])
     setSelectedDepartment('')
   }
 
@@ -2473,6 +2540,139 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                         </div>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex gap-4 pt-6 border-t border-border mt-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setSelectedDepartment('')}
+                    className="flex-1"
+                  >
+                    Cambiar Departamento
+                  </Button>
+                  <Button type="submit" className="flex-1 bg-secondary text-white hover:bg-secondary/90">
+                    Enviar Reporte
+                  </Button>
+                </div>
+              </form>
+            ) : (selectedDepartment === 'extension-profesional' || selectedDepartment === 'Centro de Extensión Profesional') ? (
+              // Custom Centro de Extensión Profesional Form
+              <form onSubmit={handleProfesionalSubmit} className="space-y-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold text-foreground">Nuevo Reporte de Centro de Extensión Profesional</h2>
+                </div>
+
+                {/* Mes Reportado */}
+                <div className="space-y-2 max-w-xs">
+                  <label htmlFor="profesional-month" className="block text-sm font-semibold text-foreground">
+                    Mes Reportado
+                  </label>
+                  <select
+                    id="profesional-month"
+                    required
+                    className="w-full rounded-lg border border-border bg-input px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                    value={selectedProfesionalMonth}
+                    onChange={(e) => setSelectedProfesionalMonth(e.target.value)}
+                  >
+                    {[
+                      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+                    ].map((month) => (
+                      <option key={month} value={month}>
+                        {month}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Checkbox "Nada que reportar" */}
+                <div className="flex items-center space-x-2 bg-muted/40 p-4 rounded-lg border border-border">
+                  <input
+                    type="checkbox"
+                    id="nothing-profesional"
+                    className="rounded border-border text-primary focus:ring-primary h-4 w-4 cursor-pointer"
+                    checked={nothingToReportProfesional}
+                    onChange={(e) => setNothingToReportProfesional(e.target.checked)}
+                  />
+                  <label htmlFor="nothing-profesional" className="text-sm font-medium text-foreground select-none cursor-pointer">
+                    Nada que reportar en este mes
+                  </label>
+                </div>
+
+                {!nothingToReportProfesional && (
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-bold text-foreground">Acompañamientos y Certificaciones Profesional</h3>
+                      <Button
+                        type="button"
+                        onClick={handleAddProfesionalItem}
+                        variant="outline"
+                        className="text-xs flex items-center gap-1 py-1.5 px-3 border border-border bg-card text-foreground hover:bg-muted"
+                      >
+                        + Agregar Registro
+                      </Button>
+                    </div>
+
+                    <div className="space-y-4">
+                      {profesionalItems.map((item, idx) => (
+                        <div key={idx} className="p-5 rounded-xl border border-border bg-muted/20 space-y-4 relative">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-bold text-muted-foreground uppercase">Registro #{idx + 1}</span>
+                            {profesionalItems.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveProfesionalItem(idx)}
+                                className="text-red-500 hover:text-red-700 text-xs font-semibold"
+                              >
+                                Eliminar
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-1 gap-4">
+                            <div className="space-y-1">
+                              <label className="text-xs font-semibold text-muted-foreground">Descripción de la Actividades / Certificación</label>
+                              <input
+                                type="text"
+                                required
+                                placeholder="Ej. Certificación otorgada a la empresa Academia de las Américas: Diplomado en Perito Consultor Técnico en Ciencias Forenses..."
+                                className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                value={item.descripcion_item}
+                                onChange={(e) => handleProfesionalItemChange(idx, 'descripcion_item', e.target.value)}
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              <div className="space-y-1">
+                                <label className="text-xs font-semibold text-muted-foreground">Nro. de Acompañamientos Realizados</label>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  required
+                                  className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                  value={item.nro_acompanamientos_realizados}
+                                  onChange={(e) => handleProfesionalItemChange(idx, 'nro_acompanamientos_realizados', parseInt(e.target.value) || 0)}
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-xs font-semibold text-muted-foreground">Nro. de Personas Beneficiadas</label>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  required
+                                  className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                  value={item.nro_personas_beneficiadas}
+                                  onChange={(e) => handleProfesionalItemChange(idx, 'nro_personas_beneficiadas', parseInt(e.target.value) || 0)}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
