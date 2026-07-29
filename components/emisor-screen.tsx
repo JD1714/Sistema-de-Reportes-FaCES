@@ -72,8 +72,8 @@ const DEPARTMENTS = [
     name: 'Instituto de Investigaciones',
     icon: '🔬',
     targets: [
-      { sheet: 'Academia', block: 'Proceso de enseñanza' },
-      { sheet: 'Extensión', block: 'Acompañamiento profesional' },
+      { sheet: 'Extensión', block: 'Acompañamiento Profesional' },
+      { sheet: 'Academia', block: 'Tecnologías para el proceso de enseñanza' },
     ],
   },
 ]
@@ -962,6 +962,138 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     setSelectedProfesionalMonth('Enero')
     setNothingToReportProfesional(false)
     setProfesionalItems([{ descripcion_item: '', nro_acompanamientos_realizados: 0, nro_personas_beneficiadas: 0 }])
+    setSelectedDepartment('')
+  }
+
+  // States for Instituto de Investigaciones
+  const [selectedInvestigacionesMonth, setSelectedInvestigacionesMonth] = useState('Enero')
+  const [investigacionesActiveTab, setInvestigacionesActiveTab] = useState<'acompanamiento' | 'tecnologias'>('acompanamiento')
+
+  const [nothingToReportAcompanamiento, setNothingToReportAcompanamiento] = useState(false)
+  const [nothingToReportTecnologias, setNothingToReportTecnologias] = useState(false)
+
+  interface InvestigacionesAcompanamientoItem {
+    descripcion_item: string
+    nro_acompanamientos_realizados: number
+    nro_personas_beneficiadas: number
+  }
+
+  interface InvestigacionesTecnologiasItem {
+    descripcion_item: string
+    nro_actividades: number
+  }
+
+  const [investigacionesAcompanamientoItems, setInvestigacionesAcompanamientoItems] = useState<InvestigacionesAcompanamientoItem[]>([
+    { descripcion_item: '', nro_acompanamientos_realizados: 0, nro_personas_beneficiadas: 0 }
+  ])
+
+  const [investigacionesTecnologiasItems, setInvestigacionesTecnologiasItems] = useState<InvestigacionesTecnologiasItem[]>([
+    { descripcion_item: '', nro_actividades: 0 }
+  ])
+
+  // Handlers for Acompañamiento Profesional
+  const handleAddInvestigacionesAcompanamientoItem = () => {
+    setInvestigacionesAcompanamientoItems((prev) => [
+      ...prev,
+      { descripcion_item: '', nro_acompanamientos_realizados: 0, nro_personas_beneficiadas: 0 }
+    ])
+  }
+  const handleRemoveInvestigacionesAcompanamientoItem = (index: number) => {
+    setInvestigacionesAcompanamientoItems((prev) => prev.filter((_, i) => i !== index))
+  }
+  const handleInvestigacionesAcompanamientoItemChange = (
+    index: number,
+    field: keyof InvestigacionesAcompanamientoItem,
+    value: string | number
+  ) => {
+    setInvestigacionesAcompanamientoItems((prev) => {
+      const updated = [...prev]
+      updated[index] = { ...updated[index], [field]: value }
+      return updated
+    })
+  }
+
+  // Handlers for Tecnologías para el Proceso de Enseñanza
+  const handleAddInvestigacionesTecnologiasItem = () => {
+    setInvestigacionesTecnologiasItems((prev) => [
+      ...prev,
+      { descripcion_item: '', nro_actividades: 0 }
+    ])
+  }
+  const handleRemoveInvestigacionesTecnologiasItem = (index: number) => {
+    setInvestigacionesTecnologiasItems((prev) => prev.filter((_, i) => i !== index))
+  }
+  const handleInvestigacionesTecnologiasItemChange = (
+    index: number,
+    field: keyof InvestigacionesTecnologiasItem,
+    value: string | number
+  ) => {
+    setInvestigacionesTecnologiasItems((prev) => {
+      const updated = [...prev]
+      updated[index] = { ...updated[index], [field]: value }
+      return updated
+    })
+  }
+
+  const handleInvestigacionesSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+
+    // Validation: ensure all tabs have been answered
+    const isAcompanamientoCompleted =
+      nothingToReportAcompanamiento || investigacionesAcompanamientoItems.some(item => item.descripcion_item.trim() !== '')
+    const isTecnologiasCompleted =
+      nothingToReportTecnologias || investigacionesTecnologiasItems.some(item => item.descripcion_item.trim() !== '')
+
+    if (!isAcompanamientoCompleted || !isTecnologiasCompleted) {
+      const missing = []
+      if (!isAcompanamientoCompleted) missing.push('Acompañamiento Profesional (Extensión)')
+      if (!isTecnologiasCompleted) missing.push('Tecnologías para el Proceso de Enseñanza (Academia)')
+
+      if (!isAcompanamientoCompleted) setInvestigacionesActiveTab('acompanamiento')
+      else if (!isTecnologiasCompleted) setInvestigacionesActiveTab('tecnologias')
+
+      alert(`Atención: Debes contestar todas las pestañas antes de enviar el reporte.\n\nFalta por contestar:\n- ${missing.join('\n- ')}\n\n(Agrega al menos una actividad o marca 'Nada que reportar en esta sección').`)
+      return
+    }
+
+    const payload = {
+      departamento_emisor: "Instituto de Investigaciones",
+      mes_reportado: selectedInvestigacionesMonth,
+      registros: [
+        {
+          hoja_destino: "Extensión",
+          bloque: "Acompañamiento Profesional",
+          detalles: nothingToReportAcompanamiento ? [] : investigacionesAcompanamientoItems.map((item) => ({
+            descripcion_item: item.descripcion_item,
+            variables: {
+              nro_acompanamientos_realizados: item.nro_acompanamientos_realizados,
+              nro_personas_beneficiadas: item.nro_personas_beneficiadas
+            }
+          }))
+        },
+        {
+          hoja_destino: "Academia",
+          bloque: "Tecnologías para el proceso de enseñanza",
+          detalles: nothingToReportTecnologias ? [] : investigacionesTecnologiasItems.map((item) => ({
+            descripcion_item: item.descripcion_item,
+            variables: {
+              nro_actividades: item.nro_actividades
+            }
+          }))
+        }
+      ]
+    }
+
+    console.log('Instituto de Investigaciones Payload:', payload)
+    alert('Reporte de Instituto de Investigaciones enviado correctamente (Simulación):\n' + JSON.stringify(payload, null, 2))
+
+    // Reset Form & return to department selection
+    setSelectedInvestigacionesMonth('Enero')
+    setInvestigacionesActiveTab('acompanamiento')
+    setNothingToReportAcompanamiento(false)
+    setNothingToReportTecnologias(false)
+    setInvestigacionesAcompanamientoItems([{ descripcion_item: '', nro_acompanamientos_realizados: 0, nro_personas_beneficiadas: 0 }])
+    setInvestigacionesTecnologiasItems([{ descripcion_item: '', nro_actividades: 0 }])
     setSelectedDepartment('')
   }
 
@@ -2673,6 +2805,258 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                         </div>
                       ))}
                     </div>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex gap-4 pt-6 border-t border-border mt-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setSelectedDepartment('')}
+                    className="flex-1"
+                  >
+                    Cambiar Departamento
+                  </Button>
+                  <Button type="submit" className="flex-1 bg-secondary text-white hover:bg-secondary/90">
+                    Enviar Reporte
+                  </Button>
+                </div>
+              </form>
+            ) : (selectedDepartment === 'instituto-investigaciones' || selectedDepartment === 'Instituto de Investigaciones') ? (
+              // Custom Instituto de Investigaciones Form
+              <form onSubmit={handleInvestigacionesSubmit} className="space-y-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold text-foreground">Nuevo Reporte del Instituto de Investigaciones</h2>
+                </div>
+
+                {/* Mes Reportado */}
+                <div className="space-y-2 max-w-xs">
+                  <label htmlFor="investigaciones-month" className="block text-sm font-semibold text-foreground">
+                    Mes Reportado
+                  </label>
+                  <select
+                    id="investigaciones-month"
+                    required
+                    className="w-full rounded-lg border border-border bg-input px-4 py-2 text-foreground focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                    value={selectedInvestigacionesMonth}
+                    onChange={(e) => setSelectedInvestigacionesMonth(e.target.value)}
+                  >
+                    {[
+                      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+                    ].map((month) => (
+                      <option key={month} value={month}>
+                        {month}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Tabs Navigation */}
+                <div className="flex flex-wrap border-b border-border mt-6">
+                  <button
+                    type="button"
+                    className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors flex items-center ${
+                      investigacionesActiveTab === 'acompanamiento'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-muted-foreground hover:text-foreground'
+                    }`}
+                    onClick={() => setInvestigacionesActiveTab('acompanamiento')}
+                  >
+                    Acompañamiento Profesional (Extensión)
+                    {(nothingToReportAcompanamiento || investigacionesAcompanamientoItems.some(i => i.descripcion_item.trim() !== '')) ? (
+                      <span className="ml-2 text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold px-1.5 py-0.5 rounded">✓</span>
+                    ) : (
+                      <span className="ml-2 text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold px-1.5 py-0.5 rounded">•</span>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors flex items-center ${
+                      investigacionesActiveTab === 'tecnologias'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-muted-foreground hover:text-foreground'
+                    }`}
+                    onClick={() => setInvestigacionesActiveTab('tecnologias')}
+                  >
+                    Tecnologías para la Enseñanza (Academia)
+                    {(nothingToReportTecnologias || investigacionesTecnologiasItems.some(i => i.descripcion_item.trim() !== '')) ? (
+                      <span className="ml-2 text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold px-1.5 py-0.5 rounded">✓</span>
+                    ) : (
+                      <span className="ml-2 text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold px-1.5 py-0.5 rounded">•</span>
+                    )}
+                  </button>
+                </div>
+
+                {/* Tab content: Acompañamiento Profesional */}
+                {investigacionesActiveTab === 'acompanamiento' && (
+                  <div className="space-y-6 pt-4">
+                    <div className="flex items-center space-x-2 bg-muted/40 p-4 rounded-lg border border-border">
+                      <input
+                        type="checkbox"
+                        id="nothing-inv-acompanamiento"
+                        className="rounded border-border text-primary focus:ring-primary h-4 w-4 cursor-pointer"
+                        checked={nothingToReportAcompanamiento}
+                        onChange={(e) => setNothingToReportAcompanamiento(e.target.checked)}
+                      />
+                      <label htmlFor="nothing-inv-acompanamiento" className="text-sm font-medium text-foreground select-none cursor-pointer">
+                        Nada que reportar en esta sección (Acompañamiento Profesional)
+                      </label>
+                    </div>
+
+                    {!nothingToReportAcompanamiento && (
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <h3 className="text-lg font-bold text-foreground">Acompañamiento Profesional</h3>
+                          <Button
+                            type="button"
+                            onClick={handleAddInvestigacionesAcompanamientoItem}
+                            variant="outline"
+                            className="text-xs flex items-center gap-1 py-1.5 px-3 border border-border bg-card text-foreground hover:bg-muted"
+                          >
+                            + Agregar Registro
+                          </Button>
+                        </div>
+
+                        <div className="space-y-4">
+                          {investigacionesAcompanamientoItems.map((item, idx) => (
+                            <div key={idx} className="p-5 rounded-xl border border-border bg-muted/20 space-y-4 relative">
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs font-bold text-muted-foreground uppercase">Registro #{idx + 1}</span>
+                                {investigacionesAcompanamientoItems.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveInvestigacionesAcompanamientoItem(idx)}
+                                    className="text-red-500 hover:text-red-700 text-xs font-semibold"
+                                  >
+                                    Eliminar
+                                  </button>
+                                )}
+                              </div>
+
+                              <div className="grid grid-cols-1 gap-4">
+                                <div className="space-y-1">
+                                  <label className="text-xs font-semibold text-muted-foreground">Descripción de la Actividad / Asesoría</label>
+                                  <input
+                                    type="text"
+                                    required
+                                    placeholder="Ej. Asesoría en metodología de la investigación para tesistas..."
+                                    className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                    value={item.descripcion_item}
+                                    onChange={(e) => handleInvestigacionesAcompanamientoItemChange(idx, 'descripcion_item', e.target.value)}
+                                  />
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                  <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-muted-foreground">Nro. de Acompañamientos Realizados</label>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      required
+                                      className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                      value={item.nro_acompanamientos_realizados}
+                                      onChange={(e) => handleInvestigacionesAcompanamientoItemChange(idx, 'nro_acompanamientos_realizados', parseInt(e.target.value) || 0)}
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-muted-foreground">Nro. de Personas Beneficiadas</label>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      required
+                                      className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                      value={item.nro_personas_beneficiadas}
+                                      onChange={(e) => handleInvestigacionesAcompanamientoItemChange(idx, 'nro_personas_beneficiadas', parseInt(e.target.value) || 0)}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Tab content: Tecnologías para el Proceso de Enseñanza */}
+                {investigacionesActiveTab === 'tecnologias' && (
+                  <div className="space-y-6 pt-4">
+                    <div className="flex items-center space-x-2 bg-muted/40 p-4 rounded-lg border border-border">
+                      <input
+                        type="checkbox"
+                        id="nothing-inv-tecnologias"
+                        className="rounded border-border text-primary focus:ring-primary h-4 w-4 cursor-pointer"
+                        checked={nothingToReportTecnologias}
+                        onChange={(e) => setNothingToReportTecnologias(e.target.checked)}
+                      />
+                      <label htmlFor="nothing-inv-tecnologias" className="text-sm font-medium text-foreground select-none cursor-pointer">
+                        Nada que reportar en esta sección (Tecnologías para la Enseñanza)
+                      </label>
+                    </div>
+
+                    {!nothingToReportTecnologias && (
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <h3 className="text-lg font-bold text-foreground">Tecnologías para el Proceso de Enseñanza</h3>
+                          <Button
+                            type="button"
+                            onClick={handleAddInvestigacionesTecnologiasItem}
+                            variant="outline"
+                            className="text-xs flex items-center gap-1 py-1.5 px-3 border border-border bg-card text-foreground hover:bg-muted"
+                          >
+                            + Agregar Actividad
+                          </Button>
+                        </div>
+
+                        <div className="space-y-4">
+                          {investigacionesTecnologiasItems.map((item, idx) => (
+                            <div key={idx} className="p-5 rounded-xl border border-border bg-muted/20 space-y-4 relative">
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs font-bold text-muted-foreground uppercase">Actividad #{idx + 1}</span>
+                                {investigacionesTecnologiasItems.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveInvestigacionesTecnologiasItem(idx)}
+                                    className="text-red-500 hover:text-red-700 text-xs font-semibold"
+                                  >
+                                    Eliminar
+                                  </button>
+                                )}
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div className="sm:col-span-2 space-y-1">
+                                  <label className="text-xs font-semibold text-muted-foreground">Descripción de la Actividad / Tecnología</label>
+                                  <input
+                                    type="text"
+                                    required
+                                    placeholder="Ej. Implementación de simulador de datos en laboratorio..."
+                                    className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                    value={item.descripcion_item}
+                                    onChange={(e) => handleInvestigacionesTecnologiasItemChange(idx, 'descripcion_item', e.target.value)}
+                                  />
+                                </div>
+
+                                <div className="space-y-1">
+                                  <label className="text-xs font-semibold text-muted-foreground">Nro. de Actividades</label>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    required
+                                    className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                    value={item.nro_actividades}
+                                    onChange={(e) => handleInvestigacionesTecnologiasItemChange(idx, 'nro_actividades', parseInt(e.target.value) || 0)}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
