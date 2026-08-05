@@ -119,19 +119,66 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     }))
   }
 
-  const handlePregradoSubmit = (e: React.FormEvent) => {
+  // API Endpoint & Submission state
+  const [stagingApiUrl, setStagingApiUrl] = useState(
+    process.env.NEXT_PUBLIC_STAGING_API_URL ||
+    'https://script.google.com/macros/s/AKfycbwxlEJlll2zMKmJzbf0cW_VAf8rbrzsBLly9AWIVL-ZoVXitqitZYJCmF4eGwRA4hn0/exec'
+  )
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  /**
+   * Envía el payload JSON al backend de Google Apps Script en la Zona de Staging
+   */
+  const sendReportToStaging = async (payload: any): Promise<boolean> => {
+    setIsSubmitting(true)
+    try {
+      if (!stagingApiUrl) {
+        alert('Reporte enviado correctamente (Simulación):\n' + JSON.stringify(payload, null, 2))
+        return true
+      }
+
+      const res = await fetch(stagingApiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8',
+        },
+        body: JSON.stringify(payload),
+      })
+
+      const data = await res.json()
+      if (data.status === 'success') {
+        alert(
+          `✅ ¡Reporte registrado exitosamente en la Zona de Staging!\n\n` +
+          `• ID Transacción: ${data.id_transaccion}\n` +
+          `• Departamento: ${data.departamento_emisor}\n` +
+          `• Estado: ${data.estado}\n` +
+          `• Fecha: ${new Date(data.fecha_emision).toLocaleString()}`
+        )
+        return true
+      } else {
+        alert(`❌ Error al registrar en la Zona de Staging:\n${data.message || 'Ocurrió un error inesperado'}`)
+        return false
+      }
+    } catch (err: any) {
+      console.error('Error al conectar con Google Apps Script:', err)
+      alert(`⚠️ Advertencia de Conexión: No se pudo conectar con el servidor de Staging.\n\nDetalles: ${err.message || err}`)
+      return false
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handlePregradoSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Construct payload according to Contexto.md
     const payload = {
-      departamento_emisor: "Control de Estudios - Pregrado",
+      departamento_emisor: "Control de Estudios",
       mes_reportado: selectedMonth,
       registros: [
         {
-          hoja_destino: "Academia",
-          bloque: "Resumen de Matrícula de Pregrado",
-          detalles: Object.keys(pregradoCareers).map((careerName) => {
-            const careerData = pregradoCareers[careerName]
+          hoja_destino: "Estudiantes",
+          bloque: "Pregrado",
+          detalles: Object.entries(pregradoCareers).map(([careerName, careerData]) => {
             return {
               sub_bloque: careerName,
               variables: {
@@ -147,7 +194,8 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     }
 
     console.log('Pregrado Payload:', payload)
-    alert('Reporte de Pregrado enviado correctamente (Simulación):\n' + JSON.stringify(payload, null, 2))
+    const success = await sendReportToStaging(payload)
+    if (!success) return
 
     // Reset form & return to department selection
     setSelectedMonth('Enero')
@@ -211,19 +259,18 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     }))
   }
 
-  const handlePostgradoSubmit = (e: React.FormEvent) => {
+
+  const handlePostgradoSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Construct payload according to Contexto.md
     const payload = {
-      departamento_emisor: "Control de Estudios - Postgrado",
+      departamento_emisor: "Control de Estudios",
       mes_reportado: selectedPostgradoMonth,
       registros: [
         {
-          hoja_destino: "Academia",
-          bloque: "Resumen de Matrícula de Postgrado",
-          detalles: Object.keys(postgradoPrograms).map((programName) => {
-            const programData = postgradoPrograms[programName]
+          hoja_destino: "Estudiantes",
+          bloque: "Postgrado",
+          detalles: Object.entries(postgradoPrograms).map(([programName, programData]) => {
             return {
               sub_bloque: programName,
               variables: {
@@ -239,9 +286,10 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     }
 
     console.log('Postgrado Payload:', payload)
-    alert('Reporte de Postgrado enviado correctamente (Simulación):\n' + JSON.stringify(payload, null, 2))
+    const success = await sendReportToStaging(payload)
+    if (!success) return
 
-    // Reset form
+    // Reset form & return to department selection
     setSelectedPostgradoMonth('Enero')
     setPostgradoPrograms({
       'Especialista en Auditoría': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
@@ -264,8 +312,9 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
       'Maestría en Estadistica': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
       'Maestría en Estudios de la Mujer': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
       'Maestría en Gerencia Empresarial': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
-      'Maestría en Gestión de Investigación y Desarrollo': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
-      'Maestría en Moneda e Instituciones Financieras': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Maestría en Gestión de la Investigación y Desarrollo': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Maestría en Moneda y Instituciones Financieras': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
+      'Maestría en Planificación del Desarrollo': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
       'Maestría en Relaciones Internacionales': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
       'Maestría en Seguridad Social': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
       'Maestría en Teoría y Política Económica': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
@@ -350,10 +399,10 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     })
   }
 
-  const handleServicioComunitarioSubmit = (e: React.FormEvent) => {
+  const handleServicioComunitarioSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Validation: ensure all tabs have been answered (either "Nada que reportar" checked or at least one item filled)
+    // Validation: ensure all tabs have been answered
     const isAcademiaCompleted = nothingToReportAcademia || academiaItems.some(item => item.descripcion_item.trim() !== '')
     const isExtensionCompleted = nothingToReportExtension || extensionItems.some(item => item.descripcion_item.trim() !== '')
 
@@ -399,7 +448,8 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     }
 
     console.log('Servicio Comunitario Payload:', payload)
-    alert('Reporte de Servicio Comunitario enviado correctamente (Simulación):\n' + JSON.stringify(payload, null, 2))
+    const success = await sendReportToStaging(payload)
+    if (!success) return
 
     // Reset Form & return to department selection
     setSelectedComunitarioMonth('Enero')
@@ -445,19 +495,21 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     })
   }
 
-  const handleBibliotecaSubmit = (e: React.FormEvent) => {
+  const handleBibliotecaSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     const detalles = []
 
-    if (!nothingToReportBiblioteca) {
-      detalles.push({
-        descripcion_item: "Atención de los estudiantes via on line y presencial",
-        variables: {
-          estudiantes_atendidos: fixedActivityAtendidos
-        }
-      })
+    // Add fixed activity
+    detalles.push({
+      descripcion_item: "Atención de los estudiantes via on line y presencial",
+      variables: {
+        estudiantes_atendidos: fixedActivityAtendidos
+      }
+    })
 
+    // Add custom activities if not marked as nothing to report
+    if (!nothingToReportBiblioteca) {
       bibliotecaCustomItems.forEach((item) => {
         if (item.descripcion_item.trim() !== '') {
           detalles.push({
@@ -483,7 +535,8 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     }
 
     console.log('Biblioteca Payload:', payload)
-    alert('Reporte de Biblioteca enviado correctamente (Simulación):\n' + JSON.stringify(payload, null, 2))
+    const success = await sendReportToStaging(payload)
+    if (!success) return
 
     // Reset Form & return to department selection
     setSelectedBibliotecaMonth('Enero')
@@ -553,15 +606,17 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     })
   }
 
-  const handleDesarrolloSubmit = (e: React.FormEvent) => {
+  const handleDesarrolloSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    const detalles = []
+    const detalles: Array<{
+      descripcion_item: string
+      variables: { servicios_prestados: number; estudiantes_beneficiados: number }
+    }> = []
 
     if (!nothingToReportDesarrollo) {
       // 1. Add fixed reports
-      FIXED_DESARROLLO_REPORTS.forEach((reportName) => {
-        const data = desarrolloFixedReports[reportName]
+      Object.entries(desarrolloFixedReports).forEach(([reportName, data]) => {
         detalles.push({
           descripcion_item: reportName,
           variables: {
@@ -571,7 +626,7 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
         })
       })
 
-      // 2. Add special reports
+      // 2. Add special (extraordinary) reports
       desarrolloSpecialItems.forEach((item) => {
         if (item.descripcion_item.trim() !== '') {
           detalles.push({
@@ -598,7 +653,8 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     }
 
     console.log('Desarrollo Estudiantil Payload:', payload)
-    alert('Reporte de Desarrollo Estudiantil enviado correctamente (Simulación):\n' + JSON.stringify(payload, null, 2))
+    const success = await sendReportToStaging(payload)
+    if (!success) return
 
     // Reset Form & return to department selection
     setSelectedDesarrolloMonth('Enero')
@@ -704,7 +760,7 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     })
   }
 
-  const handleCoordinacionExtensionSubmit = (e: React.FormEvent) => {
+  const handleCoordinacionExtensionSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     // Validation: ensure all tabs have been answered
@@ -766,7 +822,8 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     }
 
     console.log('Coordinación de Extensión Payload:', payload)
-    alert('Reporte de Coordinación de Extensión enviado correctamente (Simulación):\n' + JSON.stringify(payload, null, 2))
+    const success = await sendReportToStaging(payload)
+    if (!success) return
 
     // Reset Form & return to department selection
     setSelectedExtensionMonth('Enero')
@@ -837,7 +894,7 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     })
   }
 
-  const handleComprasSubmit = (e: React.FormEvent) => {
+  const handleComprasSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     // Validation: ensure all tabs have been answered
@@ -886,7 +943,8 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     }
 
     console.log('Departamento de Compras Payload:', payload)
-    alert('Reporte de Departamento de Compras enviado correctamente (Simulación):\n' + JSON.stringify(payload, null, 2))
+    const success = await sendReportToStaging(payload)
+    if (!success) return
 
     // Reset Form & return to department selection
     setSelectedComprasMonth('Enero')
@@ -934,7 +992,7 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     })
   }
 
-  const handleProfesionalSubmit = (e: React.FormEvent) => {
+  const handleProfesionalSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     const payload = {
@@ -956,7 +1014,8 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     }
 
     console.log('Centro de Extensión Profesional Payload:', payload)
-    alert('Reporte de Centro de Extensión Profesional enviado correctamente (Simulación):\n' + JSON.stringify(payload, null, 2))
+    const success = await sendReportToStaging(payload)
+    if (!success) return
 
     // Reset Form & return to department selection
     setSelectedProfesionalMonth('Enero')
@@ -1035,7 +1094,7 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     })
   }
 
-  const handleInvestigacionesSubmit = (e: React.FormEvent) => {
+  const handleInvestigacionesSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     // Validation: ensure all tabs have been answered
@@ -1085,7 +1144,8 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     }
 
     console.log('Instituto de Investigaciones Payload:', payload)
-    alert('Reporte de Instituto de Investigaciones enviado correctamente (Simulación):\n' + JSON.stringify(payload, null, 2))
+    const success = await sendReportToStaging(payload)
+    if (!success) return
 
     // Reset Form & return to department selection
     setSelectedInvestigacionesMonth('Enero')
@@ -1097,12 +1157,19 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     setSelectedDepartment('')
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     console.log('Report sent from:', selectedDepartment, 'Data:', formData)
+    const payload = {
+      departamento_emisor: selectedDepartment,
+      mes_reportado: "Enero",
+      datos: formData
+    }
+    const success = await sendReportToStaging(payload)
+    if (!success) return
+
     setFormData({ title: '', description: '', category: '' })
     setSelectedDepartment('')
-    alert('Reporte enviado correctamente')
   }
 
   // Department Selection Screen
