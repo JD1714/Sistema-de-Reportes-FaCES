@@ -127,32 +127,27 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   /**
-   * Envía el payload JSON al backend de Google Apps Script en la Zona de Staging
+   * Envía el payload JSON a la API Proxy local para registrar en Google Apps Script
    */
   const sendReportToStaging = async (payload: any): Promise<boolean> => {
     setIsSubmitting(true)
     try {
-      if (!stagingApiUrl) {
-        alert('Reporte enviado correctamente (Simulación):\n' + JSON.stringify(payload, null, 2))
-        return true
-      }
-
-      const res = await fetch(stagingApiUrl, {
+      const res = await fetch('/api/staging', {
         method: 'POST',
         headers: {
-          'Content-Type': 'text/plain;charset=utf-8',
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
       })
 
       const data = await res.json()
-      if (data.status === 'success') {
+      if (data.status === 'success' || data.id_transaccion) {
         alert(
           `✅ ¡Reporte registrado exitosamente en la Zona de Staging!\n\n` +
-          `• ID Transacción: ${data.id_transaccion}\n` +
-          `• Departamento: ${data.departamento_emisor}\n` +
-          `• Estado: ${data.estado}\n` +
-          `• Fecha: ${new Date(data.fecha_emision).toLocaleString()}`
+          `• ID Transacción: ${data.id_transaccion || 'REQ-REGISTRADO'}\n` +
+          `• Departamento: ${data.departamento_emisor || payload.departamento_emisor}\n` +
+          `• Estado: ${data.estado || 'Pendiente de Revisión'}\n` +
+          `• Fecha: ${data.fecha_emision ? new Date(data.fecha_emision).toLocaleString() : new Date().toLocaleString()}`
         )
         return true
       } else {
