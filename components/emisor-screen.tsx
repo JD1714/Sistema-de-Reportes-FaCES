@@ -1396,8 +1396,19 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                 >
                   Cambiar Departamento
                 </Button>
-                <Button type="submit" className="flex-1 bg-secondary text-white hover:bg-secondary/90">
-                  Enviar Reporte
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-1 bg-secondary text-white hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent inline-block"></span>
+                      Enviando a Staging...
+                    </>
+                  ) : (
+                    'Enviar Reporte'
+                  )}
                 </Button>
               </div>
             </form>
@@ -1522,8 +1533,19 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                 >
                   Cambiar Departamento
                 </Button>
-                <Button type="submit" className="flex-1 bg-secondary text-white hover:bg-secondary/90">
-                  Enviar Reporte
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-1 bg-secondary text-white hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent inline-block"></span>
+                      Enviando a Staging...
+                    </>
+                  ) : (
+                    'Enviar Reporte'
+                  )}
                 </Button>
               </div>
             </form>
@@ -1785,8 +1807,19 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                 >
                   Cambiar Departamento
                 </Button>
-                <Button type="submit" className="flex-1 bg-secondary text-white hover:bg-secondary/90">
-                  Enviar Reporte
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-1 bg-secondary text-white hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent inline-block"></span>
+                      Enviando a Staging...
+                    </>
+                  ) : (
+                    'Enviar Reporte'
+                  )}
                 </Button>
               </div>
             </form>
@@ -1937,8 +1970,19 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                   >
                     Cambiar Departamento
                   </Button>
-                  <Button type="submit" className="flex-1 bg-secondary text-white hover:bg-secondary/90">
-                    Enviar Reporte
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="flex-1 bg-secondary text-white hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent inline-block"></span>
+                        Enviando a Staging...
+                      </>
+                    ) : (
+                      'Enviar Reporte'
+                    )}
                   </Button>
                 </div>
               </form>
@@ -2122,8 +2166,19 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                   >
                     Cambiar Departamento
                   </Button>
-                  <Button type="submit" className="flex-1 bg-secondary text-white hover:bg-secondary/90">
-                    Enviar Reporte
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="flex-1 bg-secondary text-white hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent inline-block"></span>
+                        Enviando a Staging...
+                      </>
+                    ) : (
+                      'Enviar Reporte'
+                    )}
                   </Button>
                 </div>
               </form>
@@ -2482,8 +2537,19 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                   >
                     Cambiar Departamento
                   </Button>
-                  <Button type="submit" className="flex-1 bg-secondary text-white hover:bg-secondary/90">
-                    Enviar Reporte
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="flex-1 bg-secondary text-white hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent inline-block"></span>
+                        Enviando a Staging...
+                      </>
+                    ) : (
+                      'Enviar Reporte'
+                    )}
                   </Button>
                 </div>
               </form>
@@ -2747,8 +2813,19 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                   >
                     Cambiar Departamento
                   </Button>
-                  <Button type="submit" className="flex-1 bg-secondary text-white hover:bg-secondary/90">
-                    Enviar Reporte
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="flex-1 bg-secondary text-white hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent inline-block"></span>
+                        Enviando a Staging...
+                      </>
+                    ) : (
+                      'Enviar Reporte'
+                    )}
                   </Button>
                 </div>
               </form>
@@ -2880,8 +2957,19 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                   >
                     Cambiar Departamento
                   </Button>
-                  <Button type="submit" className="flex-1 bg-secondary text-white hover:bg-secondary/90">
-                    Enviar Reporte
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="flex-1 bg-secondary text-white hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent inline-block"></span>
+                        Enviando a Staging...
+                      </>
+                    ) : (
+                      'Enviar Reporte'
+                    )}
                   </Button>
                 </div>
               </form>
@@ -3132,8 +3220,19 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                   >
                     Cambiar Departamento
                   </Button>
-                  <Button type="submit" className="flex-1 bg-secondary text-white hover:bg-secondary/90">
-                    Enviar Reporte
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="flex-1 bg-secondary text-white hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent inline-block"></span>
+                        Enviando a Staging...
+                      </>
+                    ) : (
+                      'Enviar Reporte'
+                    )}
                   </Button>
                 </div>
               </form>
@@ -3203,8 +3302,19 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                 >
                   Cambiar Departamento
                 </Button>
-                <Button type="submit" className="flex-1 bg-secondary text-white hover:bg-secondary/90">
-                  Enviar Reporte
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-1 bg-secondary text-white hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent inline-block"></span>
+                      Enviando a Staging...
+                    </>
+                  ) : (
+                    'Enviar Reporte'
+                  )}
                 </Button>
               </div>
             </form>
