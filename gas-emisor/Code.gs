@@ -1,11 +1,14 @@
 /**
- * Backend Google Apps Script - Módulo Emisor
+ * Backend Google Apps Script - Módulo Emisor (Container-Bound)
  * Proyecto: Automatización de Reportes FaCES - UCV
  * 
  * Recibe reportes enviados desde el frontend y los registra en la hoja "Zona de Staging".
  */
 
-// Nombre oficial de la hoja de Staging
+// ID de respaldo de la Hoja de Cálculo en Google Drive
+var SPREADSHEET_ID = "18-fWk0JZWmB3MeKC6LWL-8qTWqSdAbo_SdA6XNQ2ar4";
+
+// Nombre oficial de la pestaña de Staging
 var STAGING_SHEET_NAME = "Zona de Staging";
 
 // Cabeceras oficiales de la Zona de Staging
@@ -18,14 +21,32 @@ var STAGING_HEADERS = [
 ];
 
 /**
+ * Obtiene la hoja de cálculo activa (Container-Bound) o por su ID
+ * @returns {GoogleAppsScript.Spreadsheet.Spreadsheet}
+ */
+function getSpreadsheet() {
+  var ss = null;
+  try {
+    ss = SpreadsheetApp.getActiveSpreadsheet();
+  } catch (e) {}
+  if (!ss && SPREADSHEET_ID && SPREADSHEET_ID.trim() !== "") {
+    try {
+      ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    } catch (e) {}
+  }
+  return ss;
+}
+
+/**
  * Función utilitaria para asegurar que la hoja "Zona de Staging" exista con sus cabeceras.
- * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} ss Objeto de la hoja de cálculo activa
  * @returns {GoogleAppsScript.Spreadsheet.Sheet} La pestaña de Staging
  */
-function setupStagingSheet(ss) {
+function setupStagingSheet() {
+  var ss = getSpreadsheet();
   if (!ss) {
-    ss = SpreadsheetApp.getActiveSpreadsheet();
+    throw new Error("No se pudo acceder a la hoja de cálculo de Google.");
   }
+  
   var sheet = ss.getSheetByName(STAGING_SHEET_NAME);
   if (!sheet) {
     sheet = ss.insertSheet(STAGING_SHEET_NAME);
@@ -62,8 +83,7 @@ function guardarReporteEnStaging(payload) {
       throw new Error("Payload inválido o no proporcionado.");
     }
 
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = setupStagingSheet(ss);
+    var sheet = setupStagingSheet();
 
     var idTransaccion = generateTransactionId();
     var fechaEmision = new Date().toISOString();
@@ -97,7 +117,7 @@ function guardarReporteEnStaging(payload) {
 }
 
 /**
- * Endpoint HTTP POST para recibir peticiones externas desde Axios o la Web App
+ * Endpoint HTTP POST para recibir peticiones externas desde Axios o el Proxy local
  */
 function doPost(e) {
   var responseData;

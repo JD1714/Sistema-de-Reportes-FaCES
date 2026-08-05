@@ -5,7 +5,7 @@ export async function POST(request: Request) {
     const payload = await request.json()
     const targetUrl =
       process.env.NEXT_PUBLIC_STAGING_API_URL ||
-      'https://script.google.com/macros/s/AKfycbwxlEJlll2zMKmJzbf0cW_VAf8rbrzsBLly9AWIVL-ZoVXitqitZYJCmF4eGwRA4hn0/exec'
+      'https://script.google.com/macros/s/AKfycbzA7ZKnRMDypgClzva7G1lEz54zTTHr-z7mt2bH-dv0GEl4Z2XRSpa_ubcIS-KNfesk/exec'
 
     // Enviar petición de servidor a servidor (evita restricciones CORS del navegador)
     const res = await fetch(targetUrl, {
