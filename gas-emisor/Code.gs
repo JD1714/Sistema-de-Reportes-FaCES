@@ -2,8 +2,7 @@
  * Backend Google Apps Script - Módulo Emisor (Container-Bound)
  * Proyecto: Automatización de Reportes FaCES - UCV
  * 
- * Recibe reportes enviados desde el frontend y los registra en la hoja "Zona de Staging".
- * Permite listar los reportes guardados en la Zona de Staging para el Módulo Receptor.
+ * Recibe reportes enviados desde el frontend emisor y los registra en la hoja "Zona de Staging".
  */
 
 // ID de respaldo de la Hoja de Cálculo en Google Drive
@@ -74,46 +73,6 @@ function generateTransactionId() {
 }
 
 /**
- * Obtiene todos los reportes guardados en la Zona de Staging.
- * @returns {Object} Lista de reportes
- */
-function obtenerReportesStaging() {
-  try {
-    var ss = getSpreadsheet();
-    if (!ss) {
-      throw new Error("No se pudo acceder a la hoja de cálculo.");
-    }
-    var sheet = ss.getSheetByName(STAGING_SHEET_NAME);
-    if (!sheet || sheet.getLastRow() <= 1) {
-      return { status: "success", reportes: [] };
-    }
-
-    var lastRow = sheet.getLastRow();
-    var data = sheet.getRange(2, 1, lastRow - 1, 5).getValues();
-
-    var reportes = data.map(function(row) {
-      var payload = {};
-      try {
-        payload = JSON.parse(row[4]);
-      } catch (e) {
-        payload = { raw: row[4] };
-      }
-      return {
-        id_transaccion: row[0],
-        fecha_emision: row[1],
-        departamento_emisor: row[2],
-        estado: row[3],
-        payload: payload
-      };
-    }).reverse(); // Más recientes primero
-
-    return { status: "success", reportes: reportes };
-  } catch (err) {
-    return { status: "error", message: err.toString() };
-  }
-}
-
-/**
  * Procesa y guarda un payload recibido en la Zona de Staging.
  * @param {Object} payload Objeto de reporte enviado por el Emisor
  * @returns {Object} Respuesta estructurada con el ID generado y estado
@@ -158,7 +117,7 @@ function guardarReporteEnStaging(payload) {
 }
 
 /**
- * Endpoint HTTP POST para recibir peticiones externas desde Axios o el Proxy local
+ * Endpoint HTTP POST para recibir peticiones desde el Frontend Emisor
  */
 function doPost(e) {
   var responseData;
@@ -169,12 +128,7 @@ function doPost(e) {
     var postData = e.postData.contents;
     var payload = JSON.parse(postData);
 
-    // Soporte para listar vía POST si es necesario
-    if (payload.action === 'listar') {
-      responseData = obtenerReportesStaging();
-    } else {
-      responseData = guardarReporteEnStaging(payload);
-    }
+    responseData = guardarReporteEnStaging(payload);
   } catch (err) {
     responseData = {
       status: "error",
@@ -187,17 +141,11 @@ function doPost(e) {
 }
 
 /**
- * Endpoint HTTP GET (Health check / Lectura de Staging)
+ * Endpoint HTTP GET (Health check / Bienvenida)
  */
 function doGet(e) {
-  if (e && e.parameter && e.parameter.action === 'listar') {
-    var result = obtenerReportesStaging();
-    return ContentService.createTextOutput(JSON.stringify(result))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-
-  var html = "<h1>Backend Módulo Emisor / Receptor - FaCES UCV</h1>" +
-             "<p>Estado: Activo y listo para sincronizar Staging.</p>";
+  var html = "<h1>Backend Módulo Emisor - FaCES UCV</h1>" +
+             "<p>Estado: Activo y listo para recibir reportes en la Zona de Staging.</p>";
   return ContentService.createTextOutput(html)
     .setMimeType(ContentService.MimeType.TEXT);
 }
