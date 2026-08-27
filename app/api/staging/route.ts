@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server'
 
+const DEFAULT_SPREADSHEET_ID = '1uf9cnqJO4epgGOmrnc9_M91vvFu4D9ju'
+
 /**
- * GET: Lee directamente la pestaña "Zona de Staging" de la Hoja de Cálculo en Google Drive
+ * GET: Lee la pestaña "Zona de Staging" del Spreadsheet activo (o por ID en query param)
  */
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const spreadsheetId = '18-fWk0JZWmB3MeKC6LWL-8qTWqSdAbo_SdA6XNQ2ar4'
+    const { searchParams } = new URL(request.url)
+    const spreadsheetId = searchParams.get('spreadsheetId') || DEFAULT_SPREADSHEET_ID
     const sheetName = encodeURIComponent('Zona de Staging')
     const targetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`
 
@@ -17,7 +20,7 @@ export async function GET() {
     const lastBrace = textData.lastIndexOf('}')
     
     if (firstBrace === -1 || lastBrace === -1) {
-      throw new Error('No se pudo extraer el formato de datos de la hoja de cálculo.')
+      return NextResponse.json({ status: 'success', reportes: [] })
     }
 
     const jsonString = textData.substring(firstBrace, lastBrace + 1)
@@ -62,7 +65,7 @@ export async function GET() {
 }
 
 /**
- * POST: Registra nuevos reportes desde el Módulo Emisor hacia Google Apps Script
+ * POST: Registra o Aprueba reportes enviando la orden a Google Apps Script
  */
 export async function POST(request: Request) {
   try {
@@ -71,7 +74,7 @@ export async function POST(request: Request) {
       process.env.NEXT_PUBLIC_STAGING_API_URL ||
       'https://script.google.com/macros/s/AKfycbzA7ZKnRMDypgClzva7G1lEz54zTTHr-z7mt2bH-dv0GEl4Z2XRSpa_ubcIS-KNfesk/exec'
 
-    // Enviar petición de servidor a servidor (evita restricciones CORS del navegador)
+    // Enviar petición de servidor a servidor hacia Google Apps Script
     const res = await fetch(targetUrl, {
       method: 'POST',
       headers: {

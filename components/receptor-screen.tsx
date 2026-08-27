@@ -18,7 +18,10 @@ import {
   Save,
   Check,
   X,
-  AlertTriangle
+  AlertTriangle,
+  Settings,
+  Link,
+  ExternalLink
 } from 'lucide-react'
 
 interface ReceptorScreenProps {
@@ -47,85 +50,20 @@ export interface StagingReport {
   }
 }
 
-// Datos de fallback en caso de estar offline o sin conexión
-const INITIAL_MOCK_REPORTS: StagingReport[] = [
-  {
-    id_transaccion: 'REQ-20260805-A101',
-    fecha_emision: new Date(Date.now() - 3600000).toISOString(),
-    departamento_emisor: 'Control de Estudios - Pregrado',
-    estado: 'Pendiente de Revisión',
-    payload: {
-      departamento_emisor: 'Control de Estudios - Pregrado',
-      mes_reportado: 'Enero',
-      registros: [
-        {
-          hoja_destino: 'Estudiantes',
-          bloque: 'Pregrado',
-          detalles: [
-            {
-              sub_bloque: 'Administradores y Contadores Públicos',
-              variables: { nuevos_ingresos: 120, egresados: 45, retiros: 3, prosecucion: 850 }
-            },
-            {
-              sub_bloque: 'Economistas',
-              variables: { nuevos_ingresos: 85, egresados: 30, retiros: 2, prosecucion: 620 }
-            }
-          ]
-        }
-      ]
-    }
-  },
-  {
-    id_transaccion: 'REQ-20260805-B202',
-    fecha_emision: new Date(Date.now() - 7200000).toISOString(),
-    departamento_emisor: 'Servicio Comunitario',
-    estado: 'Pendiente de Revisión',
-    payload: {
-      departamento_emisor: 'Servicio Comunitario',
-      mes_reportado: 'Febrero',
-      registros: [
-        {
-          hoja_destino: 'Academia',
-          bloque: 'Servicio comunitario (requisito para graduarse)',
-          detalles: [
-            {
-              actividad: 'Atención Comunitaria Parroquia San Pedro',
-              variables: { nro_proyectos: 5, nro_estudiantes: 42 }
-            }
-          ]
-        }
-      ]
-    }
-  },
-  {
-    id_transaccion: 'REQ-20260805-C303',
-    fecha_emision: new Date(Date.now() - 86400000).toISOString(),
-    departamento_emisor: 'Departamento de Compras',
-    estado: 'Aprobado',
-    payload: {
-      departamento_emisor: 'Departamento de Compras',
-      mes_reportado: 'Enero',
-      registros: [
-        {
-          hoja_destino: 'Otros Gastos de Funcionamiento',
-          bloque: 'Gestión administrativa',
-          detalles: [
-            {
-              actividad: 'Adquisición de Consumibles de Oficina',
-              variables: { nro_actividades: 3, nro_beneficiados: 150 }
-            }
-          ]
-        }
-      ]
-    }
-  }
-]
+// ID por defecto del Macro Archivo de FaCES
+const DEFAULT_SPREADSHEET_ID = '1uf9cnqJO4epgGOmrnc9_M91vvFu4D9ju'
 
 export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
   const [reports, setReports] = useState<StagingReport[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   
+  // ID y URL de la hoja vinculada activa
+  const [linkedSheetId, setLinkedSheetId] = useState<string>(DEFAULT_SPREADSHEET_ID)
+  const [showConfigModal, setShowConfigModal] = useState(false)
+  const [inputUrl, setInputUrl] = useState('')
+  const [configSuccessMsg, setConfigSuccessMsg] = useState<string | null>(null)
+
   // Filtros
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedStatus, setSelectedStatus] = useState<string>('Todos')
@@ -133,28 +71,37 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
   // Modal de Edición
   const [selectedReport, setSelectedReport] = useState<StagingReport | null>(null)
   const [editablePayload, setEditablePayload] = useState<any>(null)
-  const [isSaving, setIsSaving] = useState(false)
-  const [feedbackModal, setFeedbackModal] = useState<{ title: string; message: string; type: 'success' | 'info' } | null>(null)
+  const [isSubmittingApproval, setIsSubmittingApproval] = useState(false)
+  const [feedbackModal, setFeedbackModal] = useState<{ title: string; message: string; type: 'success' | 'info' | 'error' } | null>(null)
 
-  // Cargar reportes de Staging
+  // Cargar ID guardado en localStorage al iniciar
+  useEffect(() => {
+    const savedId = localStorage.getItem('FACES_LINKED_SHEET_ID')
+    if (savedId && savedId.trim() !== '') {
+      setLinkedSheetId(savedId)
+    }
+  }, [])
+
+  // Cargar reportes de Staging desde la hoja vinculada
   const fetchStagingReports = async () => {
     setIsLoading(true)
     setErrorMsg(null)
     try {
-      const res = await fetch('/api/staging', { cache: 'no-store' })
+      const activeId = linkedSheetId || DEFAULT_SPREADSHEET_ID
+      const res = await fetch(`/api/staging?spreadsheetId=${activeId}`, { cache: 'no-store' })
       const data = await res.json()
 
-      if (data.status === 'success' && Array.isArray(data.reportes) && data.reportes.length > 0) {
+      if (data.status === 'success' && Array.isArray(data.reportes)) {
         setReports(data.reportes)
       } else {
-        console.warn('Servidor sin reportes nuevos o devolvió respuesta alternativa:', data)
-        // Usar reportes locales si no hay datos en Staging
-        setReports((prev) => (prev.length > 0 ? prev : INITIAL_MOCK_REPORTS))
+        console.warn('Respuesta del servidor:', data)
+        setReports([])
+        if (data.message) setErrorMsg(`Aviso del servidor: ${data.message}`)
       }
     } catch (err: any) {
       console.error('Error al cargar reportes:', err)
-      setErrorMsg('No se pudo conectar con el servidor de Staging. Mostrando datos de respaldo.')
-      setReports((prev) => (prev.length > 0 ? prev : INITIAL_MOCK_REPORTS))
+      setErrorMsg('No se pudo conectar con el servidor de Staging.')
+      setReports([])
     } finally {
       setIsLoading(false)
     }
@@ -162,7 +109,32 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
 
   useEffect(() => {
     fetchStagingReports()
-  }, [])
+  }, [linkedSheetId])
+
+  // Manejar vinculación de nueva hoja por URL
+  const handleLinkNewSheet = () => {
+    if (!inputUrl.trim()) {
+      alert('Por favor ingrese una URL válida de Google Sheets.')
+      return
+    }
+
+    const match = inputUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/)
+    if (!match || !match[1]) {
+      alert('No se pudo extraer un ID válido de la URL proporcionada. Asegúrese de copiar el enlace completo del navegador.')
+      return
+    }
+
+    const newId = match[1]
+    setLinkedSheetId(newId)
+    localStorage.setItem('FACES_LINKED_SHEET_ID', newId)
+    setConfigSuccessMsg('¡Nueva hoja de cálculo vinculada exitosamente!')
+    
+    setTimeout(() => {
+      setConfigSuccessMsg(null)
+      setShowConfigModal(false)
+      setInputUrl('')
+    }, 1500)
+  }
 
   // Abrir modal de edición
   const handleOpenEdit = (report: StagingReport) => {
@@ -170,45 +142,74 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
     setEditablePayload(JSON.parse(JSON.stringify(report.payload)))
   }
 
-  // Guardar cambios locales en el payload
+  // Guardar ediciones locales en estado
   const handleSaveEdits = () => {
     if (!selectedReport || !editablePayload) return
-    setIsSaving(true)
-    
-    setTimeout(() => {
-      setReports((prev) =>
-        prev.map((r) =>
-          r.id_transaccion === selectedReport.id_transaccion
-            ? { ...r, payload: editablePayload }
-            : r
-        )
+    setReports((prev) =>
+      prev.map((r) =>
+        r.id_transaccion === selectedReport.id_transaccion
+          ? { ...r, payload: editablePayload }
+          : r
       )
-      setIsSaving(false)
-      setFeedbackModal({
-        title: '¡Cambios Guardados!',
-        message: `Los datos del reporte ${selectedReport.id_transaccion} se han actualizado localmente.`,
-        type: 'info'
-      })
-    }, 400)
+    )
+    setFeedbackModal({
+      title: '¡Edición Guardada!',
+      message: `Los cambios locales para la transacción ${selectedReport.id_transaccion} han sido actualizados en pantalla.`,
+      type: 'info'
+    })
   }
 
-  // Aprobar Reporte (Simulación Fake para el Macro Archivo)
-  const handleApproveReport = () => {
+  // Aprobar Reporte y Volcar en el Macro Archivo
+  const handleApproveReport = async () => {
     if (!selectedReport) return
+    setIsSubmittingApproval(true)
 
-    const updatedReports = reports.map((r) =>
-      r.id_transaccion === selectedReport.id_transaccion
-        ? { ...r, estado: 'Aprobado' as const, payload: editablePayload }
-        : r
-    )
-    setReports(updatedReports)
+    try {
+      const activeId = linkedSheetId || DEFAULT_SPREADSHEET_ID
+      const res = await fetch('/api/staging', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'aprobarReporte',
+          id_transaccion: selectedReport.id_transaccion,
+          payload: editablePayload,
+          spreadsheetId: activeId
+        })
+      })
 
-    setFeedbackModal({
-      title: '✅ Reporte Aprobado (Simulación)',
-      message: `El reporte ${selectedReport.id_transaccion} fue marcado como "Aprobado" y preparado para la escritura en el Macro Archivo de Excel/Sheets.`,
-      type: 'success'
-    })
-    setSelectedReport(null)
+      const data = await res.json()
+
+      if (data.status === 'success') {
+        const updatedReports = reports.map((r) =>
+          r.id_transaccion === selectedReport.id_transaccion
+            ? { ...r, estado: 'Aprobado' as const, payload: editablePayload }
+            : r
+        )
+        setReports(updatedReports)
+
+        setFeedbackModal({
+          title: '✅ ¡Reporte Aprobado y Escrito!',
+          message: data.message || `El reporte ${selectedReport.id_transaccion} ha sido volcado exitosamente en las tablas del Macro Archivo.`,
+          type: 'success'
+        })
+        setSelectedReport(null)
+      } else {
+        setFeedbackModal({
+          title: '⚠️ Advertencia al Aprobar',
+          message: data.message || 'No se pudo completar la escritura en el Macro Archivo.',
+          type: 'error'
+        })
+      }
+    } catch (err: any) {
+      console.error('Error al aprobar reporte:', err)
+      setFeedbackModal({
+        title: '❌ Error de Conexión',
+        message: err.message || 'Ocurrió un fallo de conexión con el servidor backend.',
+        type: 'error'
+      })
+    } finally {
+      setIsSubmittingApproval(false)
+    }
   }
 
   // Rechazar Reporte
@@ -256,20 +257,31 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
       {/* Header */}
       <header className="bg-gradient-to-r from-slate-900 via-primary/90 to-secondary/90 border-b border-slate-800 p-6">
         <div className="mx-auto max-w-6xl">
-          <div className="flex items-center gap-4 mb-6">
-            <Image
-              src="/faces_logo_dark.png"
-              alt="FaCES UCV"
-              width={56}
-              height={56}
-              className="w-14 h-14 object-contain filter drop-shadow"
-            />
-            <div>
-              <h1 className="text-3xl font-extrabold tracking-tight text-white">Módulo Receptor de Reportes</h1>
-              <p className="text-slate-300 text-sm mt-0.5">
-                Consolidación, edición y aprobación de reportes enviados desde la Zona de Staging
-              </p>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-4">
+              <Image
+                src="/faces_logo_dark.png"
+                alt="FaCES UCV"
+                width={56}
+                height={56}
+                className="w-14 h-14 object-contain filter drop-shadow"
+              />
+              <div>
+                <h1 className="text-3xl font-extrabold tracking-tight text-white">Módulo Receptor de Reportes</h1>
+                <p className="text-slate-300 text-sm mt-0.5">
+                  Consolidación, edición y aprobación de reportes en el Macro Archivo FaCES
+                </p>
+              </div>
             </div>
+
+            {/* Botón de Vincular Hoja */}
+            <Button
+              onClick={() => setShowConfigModal(true)}
+              className="bg-slate-900/90 hover:bg-slate-800 text-slate-100 border border-slate-700 text-xs font-semibold flex items-center gap-2 shadow-md"
+            >
+              <Settings className="w-4 h-4 text-secondary" />
+              ⚙️ Vincular Nueva Hoja
+            </Button>
           </div>
 
           {/* Estadísticas */}
@@ -296,7 +308,22 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
 
       {/* Main Content */}
       <main className="mx-auto max-w-6xl px-6 py-8 space-y-6">
-        {/* Banner Informativo */}
+        {/* Banner Informativo de Hoja Vinculada */}
+        <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-xl backdrop-blur flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2 text-slate-300">
+            <Link className="w-4 h-4 text-secondary shrink-0" />
+            <span>Hoja de cálculo vinculada activa: <strong className="text-white font-mono">{linkedSheetId}</strong></span>
+          </div>
+          <a
+            href={`https://docs.google.com/spreadsheets/d/${linkedSheetId}/edit`}
+            target="_blank"
+            rel="noreferrer"
+            className="text-secondary hover:underline flex items-center gap-1 font-semibold"
+          >
+            Abrir en Google Drive <ExternalLink className="w-3.5 h-3.5" />
+          </a>
+        </div>
+
         {errorMsg && (
           <div className="bg-amber-950/60 border border-amber-700/60 text-amber-200 px-4 py-3 rounded-lg flex items-center gap-3 text-sm">
             <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
@@ -358,7 +385,7 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
             <FileText className="w-12 h-12 text-slate-600 mx-auto" />
             <h3 className="text-lg font-bold text-slate-300">No se encontraron reportes</h3>
             <p className="text-slate-500 text-sm max-w-md mx-auto">
-              No hay transacciones registradas que coincidan con los filtros seleccionados.
+              No hay transacciones registradas en la Zona de Staging de la hoja vinculada.
             </p>
           </div>
         ) : (
@@ -437,6 +464,67 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
           </div>
         )}
       </main>
+
+      {/* Modal de Configuración / Vincular Nueva Hoja */}
+      {showConfigModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden p-6 space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2 text-white font-bold text-lg">
+                <Settings className="w-5 h-5 text-secondary" />
+                Vincular Nueva Hoja de Cálculo
+              </div>
+              <button
+                onClick={() => setShowConfigModal(false)}
+                className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Si ha subido o creado un nuevo archivo de Excel en Google Drive, pegue la URL completa del navegador a continuación. La aplicación se reconectará de inmediato sin necesidad de programar.
+            </p>
+
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                URL de la Hoja de Cálculo en Google Drive
+              </label>
+              <input
+                type="text"
+                placeholder="https://docs.google.com/spreadsheets/d/1uf9cnqJO4epgGOmrnc9_M91vvFu4D9ju/edit"
+                value={inputUrl}
+                onChange={(e) => setInputUrl(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:border-secondary focus:outline-none"
+              />
+            </div>
+
+            {configSuccessMsg && (
+              <div className="bg-emerald-950/80 border border-emerald-700 text-emerald-300 text-xs px-3 py-2 rounded-lg flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>{configSuccessMsg}</span>
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+              <Button
+                variant="outline"
+                onClick={() => setShowConfigModal(false)}
+                className="border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleLinkNewSheet}
+                className="bg-secondary hover:bg-secondary/90 text-white font-semibold text-xs flex items-center gap-1.5"
+              >
+                <Link className="w-3.5 h-3.5" />
+                Vincular y Guardar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de Revisión y Edición de Reporte */}
       {selectedReport && editablePayload && (
@@ -634,12 +722,11 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
               <Button
                 type="button"
                 onClick={handleSaveEdits}
-                disabled={isSaving}
                 variant="outline"
                 className="w-full sm:w-auto border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs flex items-center justify-center gap-2"
               >
                 <Save className="w-3.5 h-3.5" />
-                {isSaving ? 'Guardando...' : 'Guardar Ediciones Locales'}
+                Guardar Ediciones Locales
               </Button>
 
               <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -655,10 +742,20 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
                 <Button
                   type="button"
                   onClick={handleApproveReport}
-                  className="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-950/50"
+                  disabled={isSubmittingApproval}
+                  className="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-950/50"
                 >
-                  <CheckCircle className="w-3.5 h-3.5" />
-                  Aprobar Reporte
+                  {isSubmittingApproval ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      Escribiendo en Macro Archivo...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-3.5 h-3.5" />
+                      Aprobar y Escribir en Macro Archivo
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
@@ -671,9 +768,13 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
           <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-4 text-center">
             <div className={`w-12 h-12 rounded-full mx-auto flex items-center justify-center ${
-              feedbackModal.type === 'success' ? 'bg-emerald-950 border border-emerald-700 text-emerald-400' : 'bg-blue-950 border border-blue-700 text-blue-400'
+              feedbackModal.type === 'success'
+                ? 'bg-emerald-950 border border-emerald-700 text-emerald-400'
+                : feedbackModal.type === 'error'
+                ? 'bg-rose-950 border border-rose-700 text-rose-400'
+                : 'bg-blue-950 border border-blue-700 text-blue-400'
             }`}>
-              <Check className="w-6 h-6" />
+              {feedbackModal.type === 'error' ? <AlertTriangle className="w-6 h-6" /> : <Check className="w-6 h-6" />}
             </div>
             <h3 className="text-lg font-bold text-white">{feedbackModal.title}</h3>
             <p className="text-xs text-slate-300 leading-relaxed">{feedbackModal.message}</p>
