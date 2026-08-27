@@ -21,7 +21,9 @@ import {
   AlertTriangle,
   Settings,
   Link as LinkIcon,
-  ExternalLink
+  ExternalLink,
+  Copy,
+  ClipboardCheck
 } from 'lucide-react'
 
 interface ReceptorScreenProps {
@@ -43,6 +45,7 @@ export interface StagingReport {
         sub_bloque?: string
         actividad?: string
         descripcion?: string
+        descripcion_item?: string
         variables?: Record<string, any>
       }>
     }>
@@ -50,7 +53,7 @@ export interface StagingReport {
   }
 }
 
-// IDs por defecto de FaCES
+// IDs por defecto de FaCES UCV
 const DEFAULT_STAGING_SPREADSHEET_ID = '18-fWk0JZWmB3MeKC6LWL-8qTWqSdAbo_SdA6XNQ2ar4'
 const DEFAULT_MACRO_SPREADSHEET_ID = '1uf9cnqJO4epgGOmrnc9_M91vvFu4D9ju'
 
@@ -75,6 +78,7 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
   const [selectedReport, setSelectedReport] = useState<StagingReport | null>(null)
   const [editablePayload, setEditablePayload] = useState<any>(null)
   const [isSubmittingApproval, setIsSubmittingApproval] = useState(false)
+  const [copiedItemIdx, setCopiedItemIdx] = useState<string | null>(null)
   const [feedbackModal, setFeedbackModal] = useState<{ title: string; message: string; type: 'success' | 'info' | 'error' } | null>(null)
 
   // Cargar IDs guardados al iniciar
@@ -84,9 +88,6 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
 
     if (savedStagingId && savedStagingId.trim() !== '') {
       setStagingSheetId(savedStagingId)
-    } else {
-      // Limpiar valor viejo invalido si existia
-      localStorage.removeItem('FACES_LINKED_SHEET_ID')
     }
     if (savedMacroId && savedMacroId.trim() !== '') {
       setMacroSheetId(savedMacroId)
@@ -151,7 +152,7 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
       }
     }
 
-    setConfigSuccessMsg('¡Hojas de cálculo actualizadas exitosamente!')
+    setConfigSuccessMsg('¡Hojas de cálculo vinculadas exitosamente!')
     setTimeout(() => {
       setConfigSuccessMsg(null)
       setShowConfigModal(false)
@@ -164,6 +165,41 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
   const handleOpenEdit = (report: StagingReport) => {
     setSelectedReport(report)
     setEditablePayload(JSON.parse(JSON.stringify(report.payload)))
+  }
+
+  // Copiar valores tabulados para pegar en Excel / Google Sheets
+  const handleCopyValuesToClipboard = (det: any, itemKey: string) => {
+    const vars = det.variables || {}
+    const valuesArray: number[] = Object.values(vars).map(v => typeof v === 'number' ? v : parseInt(String(v)) || 0)
+    
+    // Si hay valores numéricos, unirlos por tabuladores (\t) para que al pegar en Excel llene celdas horizontales
+    const textToCopy = valuesArray.length > 0 ? valuesArray.join('\t') : (det.sub_bloque || det.actividad || det.descripcion_item || '')
+
+    navigator.clipboard.writeText(textToCopy)
+    setCopiedItemIdx(itemKey)
+
+    setTimeout(() => setCopiedItemIdx(null), 2500)
+  }
+
+  // Copiar todos los datos estructurados del reporte en bloque
+  const handleCopyAllPayloadToClipboard = () => {
+    if (!editablePayload || !editablePayload.registros) return
+
+    let summaryLines: string[] = []
+    summaryLines.push(`REPORTE: ${editablePayload.departamento_emisor || ''} - MES: ${editablePayload.mes_reportado || ''}`)
+    
+    editablePayload.registros.forEach((reg: any) => {
+      summaryLines.push(`\n[Hoja: ${reg.hoja_destino} | Bloque: ${reg.bloque}]`)
+      reg.detalles?.forEach((det: any) => {
+        const title = det.sub_bloque || det.actividad || det.descripcion_item || det.descripcion || 'Detalle'
+        const vars = det.variables ? Object.entries(det.variables).map(([k, v]) => `${k}: ${v}`).join(' | ') : ''
+        summaryLines.push(`- ${title}\t${vars}`)
+      })
+    })
+
+    navigator.clipboard.writeText(summaryLines.join('\n'))
+    setCopiedItemIdx('ALL')
+    setTimeout(() => setCopiedItemIdx(null), 2500)
   }
 
   // Guardar ediciones locales en estado
@@ -183,13 +219,13 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
     })
   }
 
-  // Aprobar Reporte y Volcar en el Macro Archivo
+  // Aprobar Reporte (Actualizar Estado a "Aprobado" en Staging Zone)
   const handleApproveReport = async () => {
     if (!selectedReport) return
     setIsSubmittingApproval(true)
 
     try {
-      const activeMacroId = macroSheetId || DEFAULT_MACRO_SPREADSHEET_ID
+      const activeStagingId = stagingSheetId || DEFAULT_STAGING_SPREADSHEET_ID
       const res = await fetch('/api/staging', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -197,7 +233,7 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
           action: 'aprobarReporte',
           id_transaccion: selectedReport.id_transaccion,
           payload: editablePayload,
-          spreadsheetId: activeMacroId
+          spreadsheetId: activeStagingId
         })
       })
 
@@ -212,15 +248,15 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
         setReports(updatedReports)
 
         setFeedbackModal({
-          title: '✅ ¡Reporte Aprobado y Escrito!',
-          message: data.message || `El reporte ${selectedReport.id_transaccion} ha sido volcado exitosamente en las tablas del Macro Archivo.`,
+          title: '✅ ¡Reporte Aprobado!',
+          message: `El reporte ${selectedReport.id_transaccion} ha sido marcado como Aprobado en la Zona de Staging.`,
           type: 'success'
         })
         setSelectedReport(null)
       } else {
         setFeedbackModal({
           title: '⚠️ Advertencia al Aprobar',
-          message: data.message || 'No se pudo completar la escritura en el Macro Archivo.',
+          message: data.message || 'No se pudo actualizar el estado en Staging.',
           type: 'error'
         })
       }
@@ -293,7 +329,7 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
               <div>
                 <h1 className="text-3xl font-extrabold tracking-tight text-white">Módulo Receptor de Reportes</h1>
                 <p className="text-slate-300 text-sm mt-0.5">
-                  Consolidación, edición y aprobación de reportes en el Macro Archivo FaCES
+                  Consolidación, revisión y copiado asistido al Macro Archivo FaCES
                 </p>
               </div>
             </div>
@@ -496,7 +532,7 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
                       className="bg-secondary/90 hover:bg-secondary text-white text-xs font-semibold flex items-center gap-2"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
-                      Revisar y Editar
+                      Revisar y Copiar Datos
                       <ChevronRight className="w-4 h-4" />
                     </Button>
                   </div>
@@ -525,7 +561,7 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
             </div>
 
             <p className="text-xs text-slate-300 leading-relaxed">
-              Si ha creado o subido nuevos archivos a Google Drive, pegue las URLs a continuación para actualizar el sistema en tiempo real.
+              Si ha creado o subido nuevos archivos a Google Drive, pegue las URLs a continuación para actualizar la aplicación.
             </p>
 
             <div className="space-y-4">
@@ -583,7 +619,7 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
         </div>
       )}
 
-      {/* Modal de Revisión y Edición de Reporte */}
+      {/* Modal de Revisión, Edición y Copiado Asistido */}
       {selectedReport && editablePayload && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto animate-fade-in">
           <div className="bg-slate-900 border border-slate-800 w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -591,7 +627,7 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
             <div className="bg-gradient-to-r from-slate-900 via-primary/80 to-secondary/80 p-6 text-white flex justify-between items-center border-b border-slate-800">
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-bold">Revisión y Edición de Reporte</h2>
+                  <h2 className="text-xl font-bold">Revisión y Copiado de Reporte</h2>
                   <span className="font-mono text-xs bg-black/40 px-2.5 py-0.5 rounded border border-white/20">
                     {selectedReport.id_transaccion}
                   </span>
@@ -609,8 +645,34 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
               </button>
             </div>
 
-            {/* Cuerpo Editable */}
+            {/* Cuerpo Editable con Asistente de Copiado */}
             <div className="p-6 space-y-6 overflow-y-auto flex-1 text-slate-200">
+              {/* Banner Guía */}
+              <div className="bg-blue-950/50 border border-blue-800/60 p-4 rounded-xl text-xs text-blue-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div>
+                  <p className="font-bold text-white mb-0.5">📋 Asistente de Copiado Seguro a Excel / Google Sheets</p>
+                  <p className="text-slate-300">
+                    Modifique cualquier valor si hace falta. Luego use el botón <strong>Copiar Valores</strong> para pegar directo en la fila de su Excel con <code>Ctrl + V</code>.
+                  </p>
+                </div>
+                <Button
+                  onClick={handleCopyAllPayloadToClipboard}
+                  className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-1.5 shrink-0"
+                >
+                  {copiedItemIdx === 'ALL' ? (
+                    <>
+                      <ClipboardCheck className="w-3.5 h-3.5 text-emerald-300" />
+                      ¡Todo Copiado!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      Copiar Todo el Reporte
+                    </>
+                  )}
+                </Button>
+              </div>
+
               {/* Información General */}
               <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -652,120 +714,96 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
                   editablePayload.registros.map((reg: any, rIdx: number) => (
                     <div key={rIdx} className="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-4">
                       {/* Cabecera del Registro */}
-                      <div className="flex flex-col sm:flex-row gap-3 pb-3 border-b border-slate-800">
-                        <div className="flex-1">
-                          <label className="block text-xs font-semibold text-slate-400 mb-1">
-                            Hoja Destino (Excel)
-                          </label>
-                          <input
-                            type="text"
-                            value={reg.hoja_destino}
-                            onChange={(e) => {
-                              const newRegs = [...editablePayload.registros]
-                              newRegs[rIdx].hoja_destino = e.target.value
-                              setEditablePayload({ ...editablePayload, registros: newRegs })
-                            }}
-                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-semibold focus:border-secondary focus:outline-none"
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <label className="block text-xs font-semibold text-slate-400 mb-1">
-                            Bloque Destino
-                          </label>
-                          <input
-                            type="text"
-                            value={reg.bloque}
-                            onChange={(e) => {
-                              const newRegs = [...editablePayload.registros]
-                              newRegs[rIdx].bloque = e.target.value
-                              setEditablePayload({ ...editablePayload, registros: newRegs })
-                            }}
-                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-semibold focus:border-secondary focus:outline-none"
-                          />
+                      <div className="flex flex-col sm:flex-row gap-3 pb-3 border-b border-slate-800 items-start sm:items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="bg-slate-800 text-secondary text-xs font-bold px-2.5 py-1 rounded border border-slate-700">
+                            Hoja: {reg.hoja_destino}
+                          </span>
+                          <span className="bg-slate-800 text-slate-200 text-xs font-bold px-2.5 py-1 rounded border border-slate-700">
+                            Bloque: {reg.bloque}
+                          </span>
                         </div>
                       </div>
 
                       {/* Detalles / Filas */}
-                      <div className="space-y-4 pt-2">
+                      <div className="space-y-4 pt-1">
                         {reg.detalles && reg.detalles.length > 0 ? (
-                          reg.detalles.map((det: any, dIdx: number) => (
-                            <div key={dIdx} className="bg-slate-900 p-4 rounded-lg border border-slate-800 space-y-3">
-                              {/* Nombre del sub-bloque o actividad */}
-                              {(det.sub_bloque || det.actividad) && (
-                                <div>
-                                  <label className="block text-xs font-semibold text-slate-400 mb-1">
-                                    {det.sub_bloque ? 'Sub-Bloque / Carrera / Sección' : 'Nombre de Actividad'}
-                                  </label>
-                                  <input
-                                    type="text"
-                                    value={det.sub_bloque || det.actividad || ''}
-                                    onChange={(e) => {
-                                      const newRegs = [...editablePayload.registros]
-                                      if (det.sub_bloque !== undefined) {
-                                        newRegs[rIdx].detalles[dIdx].sub_bloque = e.target.value
-                                      } else {
-                                        newRegs[rIdx].detalles[dIdx].actividad = e.target.value
-                                      }
-                                      setEditablePayload({ ...editablePayload, registros: newRegs })
-                                    }}
-                                    className="w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-1.5 text-xs text-slate-200 focus:border-secondary focus:outline-none"
-                                  />
-                                </div>
-                              )}
+                          reg.detalles.map((det: any, dIdx: number) => {
+                            const itemKey = `${rIdx}-${dIdx}`
+                            const title = det.sub_bloque || det.actividad || det.descripcion_item || det.descripcion || `Fila ${dIdx + 1}`
 
-                              {/* Descripción si existe */}
-                              {(det.descripcion !== undefined || det.descripcion_item !== undefined) && (
-                                <div>
-                                  <label className="block text-xs font-semibold text-slate-400 mb-1">
-                                    Descripción / Observación
-                                  </label>
-                                  <textarea
-                                    rows={2}
-                                    value={det.descripcion || det.descripcion_item || ''}
-                                    onChange={(e) => {
-                                      const newRegs = [...editablePayload.registros]
-                                      if (det.descripcion !== undefined) {
-                                        newRegs[rIdx].detalles[dIdx].descripcion = e.target.value
-                                      } else {
-                                        newRegs[rIdx].detalles[dIdx].descripcion_item = e.target.value
-                                      }
-                                      setEditablePayload({ ...editablePayload, registros: newRegs })
-                                    }}
-                                    className="w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-1.5 text-xs text-slate-200 focus:border-secondary focus:outline-none resize-none"
-                                  />
-                                </div>
-                              )}
-
-                              {/* Variables Numéricas */}
-                              {det.variables && Object.keys(det.variables).length > 0 && (
-                                <div>
-                                  <label className="block text-xs font-semibold text-slate-400 mb-2">
-                                    Variables y Métricas Numéricas
-                                  </label>
-                                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                    {Object.entries(det.variables).map(([vKey, vVal]) => (
-                                      <div key={vKey} className="bg-slate-950 p-2 rounded border border-slate-800">
-                                        <span className="block text-[11px] font-medium text-slate-400 truncate mb-1">
-                                          {vKey}
-                                        </span>
-                                        <input
-                                          type="number"
-                                          min={0}
-                                          value={vVal as number}
-                                          onChange={(e) => {
-                                            const newRegs = [...editablePayload.registros]
-                                            newRegs[rIdx].detalles[dIdx].variables[vKey] = parseInt(e.target.value) || 0
-                                            setEditablePayload({ ...editablePayload, registros: newRegs })
-                                          }}
-                                          className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-100 font-bold focus:border-secondary focus:outline-none text-right"
-                                        />
-                                      </div>
-                                    ))}
+                            return (
+                              <div key={dIdx} className="bg-slate-900 p-4 rounded-lg border border-slate-800 space-y-3">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-2">
+                                  <div className="flex-1">
+                                    <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                                      {det.sub_bloque ? 'Sub-Bloque / Carrera' : 'Nombre de Actividad / Ítem'}
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={title}
+                                      onChange={(e) => {
+                                        const newRegs = [...editablePayload.registros]
+                                        if (det.sub_bloque !== undefined) newRegs[rIdx].detalles[dIdx].sub_bloque = e.target.value
+                                        else if (det.actividad !== undefined) newRegs[rIdx].detalles[dIdx].actividad = e.target.value
+                                        else newRegs[rIdx].detalles[dIdx].descripcion_item = e.target.value
+                                        setEditablePayload({ ...editablePayload, registros: newRegs })
+                                      }}
+                                      className="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1 text-xs text-slate-200 focus:border-secondary focus:outline-none font-bold"
+                                    />
                                   </div>
+
+                                  {/* Botón Copiar Fila */}
+                                  <Button
+                                    type="button"
+                                    onClick={() => handleCopyValuesToClipboard(det, itemKey)}
+                                    className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 text-xs py-1 px-3 flex items-center gap-1.5 shrink-0"
+                                  >
+                                    {copiedItemIdx === itemKey ? (
+                                      <>
+                                        <ClipboardCheck className="w-3.5 h-3.5 text-emerald-400" />
+                                        <span className="text-emerald-400 font-bold">¡Valores Copiados!</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Copy className="w-3.5 h-3.5 text-secondary" />
+                                        <span>Copiar Valores</span>
+                                      </>
+                                    )}
+                                  </Button>
                                 </div>
-                              )}
-                            </div>
-                          ))
+
+                                {/* Variables Numéricas */}
+                                {det.variables && Object.keys(det.variables).length > 0 && (
+                                  <div>
+                                    <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+                                      Métricas Numéricas
+                                    </label>
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                      {Object.entries(det.variables).map(([vKey, vVal]) => (
+                                        <div key={vKey} className="bg-slate-950 p-2 rounded border border-slate-800">
+                                          <span className="block text-[11px] font-medium text-slate-400 truncate mb-1">
+                                            {vKey}
+                                          </span>
+                                          <input
+                                            type="number"
+                                            min={0}
+                                            value={vVal as number}
+                                            onChange={(e) => {
+                                              const newRegs = [...editablePayload.registros]
+                                              newRegs[rIdx].detalles[dIdx].variables[vKey] = parseInt(e.target.value) || 0
+                                              setEditablePayload({ ...editablePayload, registros: newRegs })
+                                            }}
+                                            className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-100 font-bold focus:border-secondary focus:outline-none text-right"
+                                          />
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })
                         ) : (
                           <p className="text-xs text-slate-500 italic">No hay detalles registrados en este bloque.</p>
                         )}
@@ -809,12 +847,12 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
                   {isSubmittingApproval ? (
                     <>
                       <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      Escribiendo en Macro Archivo...
+                      Marcando como Aprobado...
                     </>
                   ) : (
                     <>
                       <CheckCircle className="w-3.5 h-3.5" />
-                      Aprobar y Escribir en Macro Archivo
+                      Marcar como Aprobado
                     </>
                   )}
                 </Button>
