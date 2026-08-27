@@ -20,7 +20,7 @@ import {
   X,
   AlertTriangle,
   Settings,
-  Link,
+  Link as LinkIcon,
   ExternalLink
 } from 'lucide-react'
 
@@ -50,18 +50,21 @@ export interface StagingReport {
   }
 }
 
-// ID por defecto del Macro Archivo de FaCES
-const DEFAULT_SPREADSHEET_ID = '1uf9cnqJO4epgGOmrnc9_M91vvFu4D9ju'
+// IDs por defecto de FaCES
+const DEFAULT_STAGING_SPREADSHEET_ID = '18-fWk0JZWmB3MeKC6LWL-8qTWqSdAbo_SdA6XNQ2ar4'
+const DEFAULT_MACRO_SPREADSHEET_ID = '1uf9cnqJO4epgGOmrnc9_M91vvFu4D9ju'
 
 export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
   const [reports, setReports] = useState<StagingReport[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   
-  // ID y URL de la hoja vinculada activa
-  const [linkedSheetId, setLinkedSheetId] = useState<string>(DEFAULT_SPREADSHEET_ID)
+  // IDs de las Hojas de Staging y Macro Archivo
+  const [stagingSheetId, setStagingSheetId] = useState<string>(DEFAULT_STAGING_SPREADSHEET_ID)
+  const [macroSheetId, setMacroSheetId] = useState<string>(DEFAULT_MACRO_SPREADSHEET_ID)
   const [showConfigModal, setShowConfigModal] = useState(false)
-  const [inputUrl, setInputUrl] = useState('')
+  const [inputStagingUrl, setInputStagingUrl] = useState('')
+  const [inputMacroUrl, setInputMacroUrl] = useState('')
   const [configSuccessMsg, setConfigSuccessMsg] = useState<string | null>(null)
 
   // Filtros
@@ -74,21 +77,29 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
   const [isSubmittingApproval, setIsSubmittingApproval] = useState(false)
   const [feedbackModal, setFeedbackModal] = useState<{ title: string; message: string; type: 'success' | 'info' | 'error' } | null>(null)
 
-  // Cargar ID guardado en localStorage al iniciar
+  // Cargar IDs guardados al iniciar
   useEffect(() => {
-    const savedId = localStorage.getItem('FACES_LINKED_SHEET_ID')
-    if (savedId && savedId.trim() !== '') {
-      setLinkedSheetId(savedId)
+    const savedStagingId = localStorage.getItem('FACES_STAGING_SHEET_ID')
+    const savedMacroId = localStorage.getItem('FACES_MACRO_SHEET_ID')
+
+    if (savedStagingId && savedStagingId.trim() !== '') {
+      setStagingSheetId(savedStagingId)
+    } else {
+      // Limpiar valor viejo invalido si existia
+      localStorage.removeItem('FACES_LINKED_SHEET_ID')
+    }
+    if (savedMacroId && savedMacroId.trim() !== '') {
+      setMacroSheetId(savedMacroId)
     }
   }, [])
 
-  // Cargar reportes de Staging desde la hoja vinculada
+  // Cargar reportes de la Zona de Staging
   const fetchStagingReports = async () => {
     setIsLoading(true)
     setErrorMsg(null)
     try {
-      const activeId = linkedSheetId || DEFAULT_SPREADSHEET_ID
-      const res = await fetch(`/api/staging?spreadsheetId=${activeId}`, { cache: 'no-store' })
+      const activeStagingId = stagingSheetId || DEFAULT_STAGING_SPREADSHEET_ID
+      const res = await fetch(`/api/staging?spreadsheetId=${activeStagingId}`, { cache: 'no-store' })
       const data = await res.json()
 
       if (data.status === 'success' && Array.isArray(data.reportes)) {
@@ -109,30 +120,43 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
 
   useEffect(() => {
     fetchStagingReports()
-  }, [linkedSheetId])
+  }, [stagingSheetId])
 
-  // Manejar vinculación de nueva hoja por URL
-  const handleLinkNewSheet = () => {
-    if (!inputUrl.trim()) {
-      alert('Por favor ingrese una URL válida de Google Sheets.')
-      return
+  // Manejar vinculación de nuevas hojas por URL
+  const handleLinkNewSheets = () => {
+    let newStaging = stagingSheetId
+    let newMacro = macroSheetId
+
+    if (inputStagingUrl.trim()) {
+      const matchS = inputStagingUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/)
+      if (matchS && matchS[1]) {
+        newStaging = matchS[1]
+        setStagingSheetId(newStaging)
+        localStorage.setItem('FACES_STAGING_SHEET_ID', newStaging)
+      } else {
+        alert('URL de Hoja de Staging inválida.')
+        return
+      }
     }
 
-    const match = inputUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/)
-    if (!match || !match[1]) {
-      alert('No se pudo extraer un ID válido de la URL proporcionada. Asegúrese de copiar el enlace completo del navegador.')
-      return
+    if (inputMacroUrl.trim()) {
+      const matchM = inputMacroUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/)
+      if (matchM && matchM[1]) {
+        newMacro = matchM[1]
+        setMacroSheetId(newMacro)
+        localStorage.setItem('FACES_MACRO_SHEET_ID', newMacro)
+      } else {
+        alert('URL de Macro Archivo inválida.')
+        return
+      }
     }
 
-    const newId = match[1]
-    setLinkedSheetId(newId)
-    localStorage.setItem('FACES_LINKED_SHEET_ID', newId)
-    setConfigSuccessMsg('¡Nueva hoja de cálculo vinculada exitosamente!')
-    
+    setConfigSuccessMsg('¡Hojas de cálculo actualizadas exitosamente!')
     setTimeout(() => {
       setConfigSuccessMsg(null)
       setShowConfigModal(false)
-      setInputUrl('')
+      setInputStagingUrl('')
+      setInputMacroUrl('')
     }, 1500)
   }
 
@@ -165,7 +189,7 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
     setIsSubmittingApproval(true)
 
     try {
-      const activeId = linkedSheetId || DEFAULT_SPREADSHEET_ID
+      const activeMacroId = macroSheetId || DEFAULT_MACRO_SPREADSHEET_ID
       const res = await fetch('/api/staging', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -173,7 +197,7 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
           action: 'aprobarReporte',
           id_transaccion: selectedReport.id_transaccion,
           payload: editablePayload,
-          spreadsheetId: activeId
+          spreadsheetId: activeMacroId
         })
       })
 
@@ -280,7 +304,7 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
               className="bg-slate-900/90 hover:bg-slate-800 text-slate-100 border border-slate-700 text-xs font-semibold flex items-center gap-2 shadow-md"
             >
               <Settings className="w-4 h-4 text-secondary" />
-              ⚙️ Vincular Nueva Hoja
+              ⚙️ Configuración / Hojas
             </Button>
           </div>
 
@@ -308,20 +332,38 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
 
       {/* Main Content */}
       <main className="mx-auto max-w-6xl px-6 py-8 space-y-6">
-        {/* Banner Informativo de Hoja Vinculada */}
+        {/* Banner Informativo de Hojas Vinculadas */}
         <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-xl backdrop-blur flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2 text-slate-300">
-            <Link className="w-4 h-4 text-secondary shrink-0" />
-            <span>Hoja de cálculo vinculada activa: <strong className="text-white font-mono">{linkedSheetId}</strong></span>
+          <div className="flex flex-col gap-1 text-slate-300">
+            <div className="flex items-center gap-2">
+              <LinkIcon className="w-3.5 h-3.5 text-secondary shrink-0" />
+              <span>Hoja de Staging (Entrada): <strong className="text-white font-mono">{stagingSheetId}</strong></span>
+            </div>
+            <div className="flex items-center gap-2">
+              <FileText className="w-3.5 h-3.5 text-primary shrink-0" />
+              <span>Macro Archivo (Destino): <strong className="text-white font-mono">{macroSheetId}</strong></span>
+            </div>
           </div>
-          <a
-            href={`https://docs.google.com/spreadsheets/d/${linkedSheetId}/edit`}
-            target="_blank"
-            rel="noreferrer"
-            className="text-secondary hover:underline flex items-center gap-1 font-semibold"
-          >
-            Abrir en Google Drive <ExternalLink className="w-3.5 h-3.5" />
-          </a>
+
+          <div className="flex items-center gap-3">
+            <a
+              href={`https://docs.google.com/spreadsheets/d/${stagingSheetId}/edit`}
+              target="_blank"
+              rel="noreferrer"
+              className="text-secondary hover:underline flex items-center gap-1 font-semibold"
+            >
+              Staging <ExternalLink className="w-3 h-3" />
+            </a>
+            <span className="text-slate-600">|</span>
+            <a
+              href={`https://docs.google.com/spreadsheets/d/${macroSheetId}/edit`}
+              target="_blank"
+              rel="noreferrer"
+              className="text-primary hover:underline flex items-center gap-1 font-semibold"
+            >
+              Macro Archivo <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
         </div>
 
         {errorMsg && (
@@ -465,14 +507,14 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
         )}
       </main>
 
-      {/* Modal de Configuración / Vincular Nueva Hoja */}
+      {/* Modal de Configuración / Vincular Hojas */}
       {showConfigModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in">
           <div className="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden p-6 space-y-5">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2 text-white font-bold text-lg">
                 <Settings className="w-5 h-5 text-secondary" />
-                Vincular Nueva Hoja de Cálculo
+                Vincular Hojas de Cálculo
               </div>
               <button
                 onClick={() => setShowConfigModal(false)}
@@ -483,20 +525,35 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
             </div>
 
             <p className="text-xs text-slate-300 leading-relaxed">
-              Si ha subido o creado un nuevo archivo de Excel en Google Drive, pegue la URL completa del navegador a continuación. La aplicación se reconectará de inmediato sin necesidad de programar.
+              Si ha creado o subido nuevos archivos a Google Drive, pegue las URLs a continuación para actualizar el sistema en tiempo real.
             </p>
 
-            <div className="space-y-2">
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                URL de la Hoja de Cálculo en Google Drive
-              </label>
-              <input
-                type="text"
-                placeholder="https://docs.google.com/spreadsheets/d/1uf9cnqJO4epgGOmrnc9_M91vvFu4D9ju/edit"
-                value={inputUrl}
-                onChange={(e) => setInputUrl(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:border-secondary focus:outline-none"
-              />
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  URL de Hoja de Staging (Entrada)
+                </label>
+                <input
+                  type="text"
+                  placeholder={`Actual: ${stagingSheetId}`}
+                  value={inputStagingUrl}
+                  onChange={(e) => setInputStagingUrl(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:border-secondary focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  URL del Macro Archivo (Destino)
+                </label>
+                <input
+                  type="text"
+                  placeholder={`Actual: ${macroSheetId}`}
+                  value={inputMacroUrl}
+                  onChange={(e) => setInputMacroUrl(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:border-primary focus:outline-none"
+                />
+              </div>
             </div>
 
             {configSuccessMsg && (
@@ -515,10 +572,10 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
                 Cancelar
               </Button>
               <Button
-                onClick={handleLinkNewSheet}
+                onClick={handleLinkNewSheets}
                 className="bg-secondary hover:bg-secondary/90 text-white font-semibold text-xs flex items-center gap-1.5"
               >
-                <Link className="w-3.5 h-3.5" />
+                <LinkIcon className="w-3.5 h-3.5" />
                 Vincular y Guardar
               </Button>
             </div>
@@ -657,17 +714,21 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
                               )}
 
                               {/* Descripción si existe */}
-                              {det.descripcion !== undefined && (
+                              {(det.descripcion !== undefined || det.descripcion_item !== undefined) && (
                                 <div>
                                   <label className="block text-xs font-semibold text-slate-400 mb-1">
                                     Descripción / Observación
                                   </label>
                                   <textarea
                                     rows={2}
-                                    value={det.descripcion || ''}
+                                    value={det.descripcion || det.descripcion_item || ''}
                                     onChange={(e) => {
                                       const newRegs = [...editablePayload.registros]
-                                      newRegs[rIdx].detalles[dIdx].descripcion = e.target.value
+                                      if (det.descripcion !== undefined) {
+                                        newRegs[rIdx].detalles[dIdx].descripcion = e.target.value
+                                      } else {
+                                        newRegs[rIdx].detalles[dIdx].descripcion_item = e.target.value
+                                      }
                                       setEditablePayload({ ...editablePayload, registros: newRegs })
                                     }}
                                     className="w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-1.5 text-xs text-slate-200 focus:border-secondary focus:outline-none resize-none"

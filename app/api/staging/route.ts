@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server'
 
-const DEFAULT_SPREADSHEET_ID = '1uf9cnqJO4epgGOmrnc9_M91vvFu4D9ju'
+// ID por defecto de la Hoja de Staging
+const DEFAULT_STAGING_SPREADSHEET_ID = '18-fWk0JZWmB3MeKC6LWL-8qTWqSdAbo_SdA6XNQ2ar4'
 
 /**
- * GET: Lee la pestaña "Zona de Staging" del Spreadsheet activo (o por ID en query param)
+ * GET: Lee la pestaña "Zona de Staging" de la Hoja de Cálculo de Staging
  */
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
-    const spreadsheetId = searchParams.get('spreadsheetId') || DEFAULT_SPREADSHEET_ID
+    const spreadsheetId = searchParams.get('spreadsheetId') || DEFAULT_STAGING_SPREADSHEET_ID
     const sheetName = encodeURIComponent('Zona de Staging')
     const targetUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`
 
