@@ -1,5 +1,5 @@
 /**
- * Backend Google Apps Script - FaCES UCV (Staging & Estado de Aprobación)
+ * Backend Google Apps Script - FaCES UCV (Staging & Aprobación)
  */
 
 var DEFAULT_STAGING_SPREADSHEET_ID = "18-fWk0JZWmB3MeKC6LWL-8qTWqSdAbo_SdA6XNQ2ar4";
@@ -117,6 +117,31 @@ function aprobarReporteEnStaging(payload) {
   }
 }
 
+/**
+ * RECEPTOR: Borra todas las filas de la Zona de Staging (conservando encabezados)
+ */
+function limpiarStagingSheet(spreadsheetId) {
+  try {
+    var ss = getSpreadsheet(spreadsheetId || DEFAULT_STAGING_SPREADSHEET_ID);
+    var sheet = ss.getSheetByName(STAGING_SHEET_NAME);
+    if (!sheet) {
+      return { status: "success", message: "La Zona de Staging ya está limpia." };
+    }
+
+    var lastRow = sheet.getLastRow();
+    if (lastRow > 1) {
+      sheet.deleteRows(2, lastRow - 1);
+    }
+
+    return {
+      status: "success",
+      message: "Zona de Staging limpiada exitosamente."
+    };
+  } catch (err) {
+    return { status: "error", message: "Error al limpiar Staging: " + err.toString() };
+  }
+}
+
 function doPost(e) {
   var responseData;
   try {
@@ -128,6 +153,8 @@ function doPost(e) {
 
     if (payload && payload.action === 'aprobarReporte') {
       responseData = aprobarReporteEnStaging(payload);
+    } else if (payload && payload.action === 'limpiarStaging') {
+      responseData = limpiarStagingSheet(payload.spreadsheetId);
     } else {
       responseData = guardarReporteEnStaging(payload);
     }

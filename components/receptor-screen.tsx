@@ -7,7 +7,6 @@ import {
   RefreshCw,
   Search,
   CheckCircle,
-  XCircle,
   Clock,
   Edit3,
   ChevronRight,
@@ -25,7 +24,8 @@ import {
   Copy,
   ClipboardCheck,
   ArrowDown,
-  Info
+  Info,
+  Trash2
 } from 'lucide-react'
 
 interface ReceptorScreenProps {
@@ -36,7 +36,7 @@ export interface StagingReport {
   id_transaccion: string
   fecha_emision: string
   departamento_emisor: string
-  estado: 'Pendiente de Revisión' | 'Aprobado' | 'Rechazado'
+  estado: 'Pendiente de Revisión' | 'Aprobado'
   payload: {
     departamento_emisor?: string
     mes_reportado?: string
@@ -71,6 +71,10 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
   const [inputStagingUrl, setInputStagingUrl] = useState('')
   const [inputMacroUrl, setInputMacroUrl] = useState('')
   const [configSuccessMsg, setConfigSuccessMsg] = useState<string | null>(null)
+
+  // Modal de confirmación para borrar Staging
+  const [showClearStagingConfirm, setShowClearStagingConfirm] = useState(false)
+  const [isClearingStaging, setIsClearingStaging] = useState(false)
 
   // Filtros
   const [searchTerm, setSearchTerm] = useState('')
@@ -124,6 +128,41 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
   useEffect(() => {
     fetchStagingReports()
   }, [stagingSheetId])
+
+  // Borrar todos los registros de la Zona de Staging
+  const handleClearAllStaging = async () => {
+    setIsClearingStaging(true)
+    try {
+      const activeStagingId = stagingSheetId || DEFAULT_STAGING_SPREADSHEET_ID
+      const res = await fetch('/api/staging', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'limpiarStaging',
+          spreadsheetId: activeStagingId
+        })
+      })
+
+      const data = await res.json()
+
+      if (data.status === 'success') {
+        setReports([])
+        setShowClearStagingConfirm(false)
+        setFeedbackModal({
+          title: '🗑️ Staging Limpiado',
+          message: 'Todos los registros han sido borrados exitosamente de la Zona de Staging.',
+          type: 'success'
+        })
+      } else {
+        alert(data.message || 'No se pudo limpiar la Zona de Staging.')
+      }
+    } catch (err: any) {
+      console.error('Error al limpiar Staging:', err)
+      alert('Error de conexión al intentar limpiar Staging.')
+    } finally {
+      setIsClearingStaging(false)
+    }
+  }
 
   // Manejar vinculación de nuevas hojas por URL
   const handleLinkNewSheets = () => {
@@ -185,7 +224,6 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
       })
     })
 
-    // Separar por salto de línea (\n) para que al pegar en Excel llene la columna verticalmente hacia abajo
     const verticalString = values.join('\n')
     navigator.clipboard.writeText(verticalString)
     setCopiedItemIdx(`CONTROL_VERT_${metricKey}`)
@@ -199,7 +237,6 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
     const egresados = vars.egresados !== undefined ? vars.egresados : ''
     const retiros = vars.retiros !== undefined ? vars.retiros : ''
 
-    // Separados por tabuladores, dejando la celda de prosecución vacía para no sobrescribir la fórmula nativa
     const tabString = `${nuevos}\t\t${egresados}\t${retiros}`
     navigator.clipboard.writeText(tabString)
     setCopiedItemIdx(itemKey)
@@ -309,19 +346,6 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
     }
   }
 
-  // Rechazar Reporte
-  const handleRejectReport = () => {
-    if (!selectedReport) return
-
-    const updatedReports = reports.map((r) =>
-      r.id_transaccion === selectedReport.id_transaccion
-        ? { ...r, estado: 'Rechazado' as const }
-        : r
-    )
-    setReports(updatedReports)
-    setSelectedReport(null)
-  }
-
   // Filtrado de reportes
   const filteredReports = reports.filter((r) => {
     const matchesSearch =
@@ -332,13 +356,11 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
     return matchesSearch && r.estado === selectedStatus
   })
 
-  // Estadísticas
+  // Estadísticas (solo Pendientes y Aprobados)
   const totalCount = reports.length
   const pendingCount = reports.filter((r) => r.estado === 'Pendiente de Revisión').length
   const approvedCount = reports.filter((r) => r.estado === 'Aprobado').length
-  const rejectedCount = reports.filter((r) => r.estado === 'Rechazado').length
 
-  // Identificar si el reporte actual es de Control de Estudios (7 carreras)
   const isControlDeEstudios = editablePayload?.departamento_emisor?.toLowerCase().includes('control de estudios')
 
   return (
@@ -374,33 +396,39 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
               </div>
             </div>
 
-            {/* Botón de Vincular Hoja */}
-            <Button
-              onClick={() => setShowConfigModal(true)}
-              className="bg-slate-900/90 hover:bg-slate-800 text-slate-100 border border-slate-700 text-xs font-semibold flex items-center gap-2 shadow-md"
-            >
-              <Settings className="w-4 h-4 text-secondary" />
-              ⚙️ Configuración / Hojas
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => setShowClearStagingConfirm(true)}
+                variant="outline"
+                className="bg-rose-950/80 hover:bg-rose-900 text-rose-200 border border-rose-800/80 text-xs font-semibold flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                Limpiar Staging
+              </Button>
+
+              <Button
+                onClick={() => setShowConfigModal(true)}
+                className="bg-slate-900/90 hover:bg-slate-800 text-slate-100 border border-slate-700 text-xs font-semibold flex items-center gap-2 shadow-md"
+              >
+                <Settings className="w-4 h-4 text-secondary" />
+                ⚙️ Configuración / Hojas
+              </Button>
+            </div>
           </div>
 
           {/* Estadísticas */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-slate-900/60 backdrop-blur border border-slate-800 p-4 rounded-xl">
               <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Total Staging</p>
               <p className="text-3xl font-bold text-white mt-1">{totalCount}</p>
             </div>
             <div className="bg-amber-950/40 backdrop-blur border border-amber-800/50 p-4 rounded-xl">
-              <p className="text-amber-400 text-xs font-semibold uppercase tracking-wider">Pendientes</p>
+              <p className="text-amber-400 text-xs font-semibold uppercase tracking-wider">Pendientes de Revisión</p>
               <p className="text-3xl font-bold text-amber-300 mt-1">{pendingCount}</p>
             </div>
             <div className="bg-emerald-950/40 backdrop-blur border border-emerald-800/50 p-4 rounded-xl">
               <p className="text-emerald-400 text-xs font-semibold uppercase tracking-wider">Aprobados</p>
               <p className="text-3xl font-bold text-emerald-300 mt-1">{approvedCount}</p>
-            </div>
-            <div className="bg-rose-950/40 backdrop-blur border border-rose-800/50 p-4 rounded-xl">
-              <p className="text-rose-400 text-xs font-semibold uppercase tracking-wider">Rechazados</p>
-              <p className="text-3xl font-bold text-rose-300 mt-1">{rejectedCount}</p>
             </div>
           </div>
         </div>
@@ -465,7 +493,7 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
 
           {/* Filtros por Estado */}
           <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 overflow-x-auto">
-            {['Todos', 'Pendiente de Revisión', 'Aprobado', 'Rechazado'].map((status) => (
+            {['Todos', 'Pendiente de Revisión', 'Aprobado'].map((status) => (
               <button
                 key={status}
                 onClick={() => setSelectedStatus(status)}
@@ -532,11 +560,6 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
                           <CheckCircle className="w-3.5 h-3.5" /> Aprobado
                         </span>
                       )}
-                      {report.estado === 'Rechazado' && (
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded bg-rose-950/60 text-rose-400 border border-rose-800/60">
-                          <XCircle className="w-3.5 h-3.5" /> Rechazado
-                        </span>
-                      )}
 
                       <span className="text-xs text-slate-400 flex items-center gap-1 ml-auto md:ml-0">
                         <Calendar className="w-3.5 h-3.5" />
@@ -582,6 +605,49 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
           </div>
         )}
       </main>
+
+      {/* Modal de Confirmación para Limpiar Staging */}
+      {showClearStagingConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-4 text-center">
+            <div className="w-12 h-12 rounded-full mx-auto bg-rose-950 border border-rose-700 text-rose-400 flex items-center justify-center">
+              <Trash2 className="w-6 h-6" />
+            </div>
+
+            <h3 className="text-lg font-bold text-white">¿Limpiar toda la Zona de Staging?</h3>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Esta acción borrará <strong>todos los registros acumulados</strong> en la pestaña Zona de Staging de Google Sheets. Use esta opción cuando desee reiniciar la lista de reportes recibidos.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+              <Button
+                variant="outline"
+                onClick={() => setShowClearStagingConfirm(false)}
+                className="border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleClearAllStaging}
+                disabled={isClearingStaging}
+                className="bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs flex items-center gap-1.5"
+              >
+                {isClearingStaging ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    Limpiando...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Sí, Limpiar Todo Staging
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de Configuración / Vincular Hojas */}
       {showConfigModal && (
@@ -884,7 +950,7 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
                                     />
                                   </div>
 
-                                  {/* Botón Copiar Fila Individual (con skip de fórmula para Control de Estudios) */}
+                                  {/* Botón Copiar Fila Individual */}
                                   <Button
                                     type="button"
                                     onClick={() =>
@@ -966,18 +1032,9 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 <Button
                   type="button"
-                  onClick={handleRejectReport}
-                  className="flex-1 sm:flex-none bg-rose-900/80 hover:bg-rose-800 text-rose-100 border border-rose-700 text-xs font-semibold flex items-center justify-center gap-1.5"
-                >
-                  <XCircle className="w-3.5 h-3.5" />
-                  Rechazar Reporte
-                </Button>
-
-                <Button
-                  type="button"
                   onClick={handleApproveReport}
                   disabled={isSubmittingApproval}
-                  className="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-950/50"
+                  className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-950/50"
                 >
                   {isSubmittingApproval ? (
                     <>
