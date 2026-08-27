@@ -23,7 +23,9 @@ import {
   Link as LinkIcon,
   ExternalLink,
   Copy,
-  ClipboardCheck
+  ClipboardCheck,
+  ArrowRight,
+  Info
 } from 'lucide-react'
 
 interface ReceptorScreenProps {
@@ -167,21 +169,42 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
     setEditablePayload(JSON.parse(JSON.stringify(report.payload)))
   }
 
-  // Copiar valores tabulados para pegar en Excel / Google Sheets
+  // Copiar fila horizontal específica de métrica para las 7 carreras (Control de Estudios)
+  const handleCopyCarreraRowToClipboard = (metricKey: string) => {
+    if (!editablePayload || !editablePayload.registros) return
+
+    const values: number[] = []
+    editablePayload.registros.forEach((reg: any) => {
+      reg.detalles?.forEach((det: any) => {
+        if (det.variables && det.variables[metricKey] !== undefined) {
+          const val = typeof det.variables[metricKey] === 'number'
+            ? det.variables[metricKey]
+            : parseInt(String(det.variables[metricKey])) || 0
+          values.push(val)
+        }
+      })
+    })
+
+    const tabString = values.join('\t')
+    navigator.clipboard.writeText(tabString)
+    setCopiedItemIdx(`CONTROL_${metricKey}`)
+    setTimeout(() => setCopiedItemIdx(null), 2500)
+  }
+
+  // Copiar valores tabulados individuales por ítem/fila
   const handleCopyValuesToClipboard = (det: any, itemKey: string) => {
     const vars = det.variables || {}
     const valuesArray: number[] = Object.values(vars).map(v => typeof v === 'number' ? v : parseInt(String(v)) || 0)
     
-    // Si hay valores numéricos, unirlos por tabuladores (\t) para que al pegar en Excel llene celdas horizontales
-    const textToCopy = valuesArray.length > 0 ? valuesArray.join('\t') : (det.sub_bloque || det.actividad || det.descripcion_item || '')
+    // Si hay valores numéricos, unirlos por tabuladores (\t)
+    const textToCopy = valuesArray.length > 0 ? valuesArray.join('\t') : (det.sub_bloque || det.actividad || det.descripcion_item || det.descripcion || '')
 
     navigator.clipboard.writeText(textToCopy)
     setCopiedItemIdx(itemKey)
-
     setTimeout(() => setCopiedItemIdx(null), 2500)
   }
 
-  // Copiar todos los datos estructurados del reporte en bloque
+  // Copiar resumen completo del reporte
   const handleCopyAllPayloadToClipboard = () => {
     if (!editablePayload || !editablePayload.registros) return
 
@@ -300,6 +323,9 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
   const pendingCount = reports.filter((r) => r.estado === 'Pendiente de Revisión').length
   const approvedCount = reports.filter((r) => r.estado === 'Aprobado').length
   const rejectedCount = reports.filter((r) => r.estado === 'Rechazado').length
+
+  // Identificar si el reporte actual es de Control de Estudios (7 carreras)
+  const isControlDeEstudios = editablePayload?.departamento_emisor?.toLowerCase().includes('control de estudios')
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
@@ -627,14 +653,14 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
             <div className="bg-gradient-to-r from-slate-900 via-primary/80 to-secondary/80 p-6 text-white flex justify-between items-center border-b border-slate-800">
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-bold">Revisión y Copiado de Reporte</h2>
+                  <h2 className="text-xl font-bold">Asistente de Copiado y Aprobación</h2>
                   <span className="font-mono text-xs bg-black/40 px-2.5 py-0.5 rounded border border-white/20">
                     {selectedReport.id_transaccion}
                   </span>
                 </div>
                 <p className="text-xs text-slate-200 mt-1">
                   Remitente: <strong className="text-white">{selectedReport.departamento_emisor}</strong> | 
-                  Fecha: {new Date(selectedReport.fecha_emision).toLocaleString('es-ES')}
+                  Mes: <strong className="text-white">{editablePayload.mes_reportado || 'No especificado'}</strong>
                 </p>
               </div>
               <button
@@ -645,35 +671,120 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
               </button>
             </div>
 
-            {/* Cuerpo Editable con Asistente de Copiado */}
+            {/* Cuerpo Editable con Asistente Especializado */}
             <div className="p-6 space-y-6 overflow-y-auto flex-1 text-slate-200">
-              {/* Banner Guía */}
-              <div className="bg-blue-950/50 border border-blue-800/60 p-4 rounded-xl text-xs text-blue-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                <div>
-                  <p className="font-bold text-white mb-0.5">📋 Asistente de Copiado Seguro a Excel / Google Sheets</p>
-                  <p className="text-slate-300">
-                    Modifique cualquier valor si hace falta. Luego use el botón <strong>Copiar Valores</strong> para pegar directo en la fila de su Excel con <code>Ctrl + V</code>.
-                  </p>
-                </div>
-                <Button
-                  onClick={handleCopyAllPayloadToClipboard}
-                  className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-1.5 shrink-0"
-                >
-                  {copiedItemIdx === 'ALL' ? (
-                    <>
-                      <ClipboardCheck className="w-3.5 h-3.5 text-emerald-300" />
-                      ¡Todo Copiado!
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-3.5 h-3.5" />
-                      Copiar Todo el Reporte
-                    </>
-                  )}
-                </Button>
-              </div>
+              {/* ASISTENTE ESPECIALIZADO: Control de Estudios (7 Carreras Horizontal) */}
+              {isControlDeEstudios ? (
+                <div className="bg-slate-950 border border-primary/50 p-5 rounded-2xl space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div>
+                      <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                        <Layers className="w-4 h-4 text-primary" />
+                        Asistente Especializado: Control de Estudios (7 Carreras)
+                      </h3>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        Copie las métricas horizontales para llenar las 7 carreras en Excel con 1 solo <code>Ctrl + V</code> por fila.
+                      </p>
+                    </div>
+                    <span className="text-[11px] bg-primary/20 text-primary border border-primary/40 font-bold px-2.5 py-1 rounded-full">
+                      Mes: {editablePayload.mes_reportado || 'Enero'}
+                    </span>
+                  </div>
 
-              {/* Información General */}
+                  {/* Instrucciones de Pegado */}
+                  <div className="bg-slate-900 p-3 rounded-lg border border-slate-800 text-xs text-slate-300 flex items-start gap-2">
+                    <Info className="w-4 h-4 text-secondary shrink-0 mt-0.5" />
+                    <span>
+                      <strong>Instrucción para pegado en Excel:</strong> Haga clic en la celda <em>Administración - Nuevos Ingresos</em> del mes <strong>{editablePayload.mes_reportado}</strong> y presione <code>Ctrl + V</code>. Llenará las 7 carreras en horizontal de una vez. Salte la fila de <em>Prosecución (fórmula)</em> y repita para <em>Egresados</em> y <em>Retiros</em>.
+                    </span>
+                  </div>
+
+                  {/* Botones de Copiado Horizontal por Métrica */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                    <Button
+                      type="button"
+                      onClick={() => handleCopyCarreraRowToClipboard('nuevos_ingresos')}
+                      className="bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/80 text-xs font-semibold py-2.5 flex items-center justify-center gap-2"
+                    >
+                      {copiedItemIdx === 'CONTROL_nuevos_ingresos' ? (
+                        <>
+                          <ClipboardCheck className="w-4 h-4 text-emerald-400" />
+                          ¡Nuevos Ingresos Copiados!
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4 text-emerald-400" />
+                          📋 Copiar Nuevos Ingresos (7 Carreras)
+                        </>
+                      )}
+                    </Button>
+
+                    <Button
+                      type="button"
+                      onClick={() => handleCopyCarreraRowToClipboard('egresados')}
+                      className="bg-blue-950/80 hover:bg-blue-900 text-blue-300 border border-blue-700/80 text-xs font-semibold py-2.5 flex items-center justify-center gap-2"
+                    >
+                      {copiedItemIdx === 'CONTROL_egresados' ? (
+                        <>
+                          <ClipboardCheck className="w-4 h-4 text-blue-400" />
+                          ¡Egresados Copiados!
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4 text-blue-400" />
+                          📋 Copiar Egresados (7 Carreras)
+                        </>
+                      )}
+                    </Button>
+
+                    <Button
+                      type="button"
+                      onClick={() => handleCopyCarreraRowToClipboard('retiros')}
+                      className="bg-amber-950/80 hover:bg-amber-900 text-amber-300 border border-amber-700/80 text-xs font-semibold py-2.5 flex items-center justify-center gap-2"
+                    >
+                      {copiedItemIdx === 'CONTROL_retiros' ? (
+                        <>
+                          <ClipboardCheck className="w-4 h-4 text-amber-400" />
+                          ¡Retiros Copiados!
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4 text-amber-400" />
+                          📋 Copiar Retiros (7 Carreras)
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                /* Banner Guía Estándar para los demás departamentos */
+                <div className="bg-blue-950/50 border border-blue-800/60 p-4 rounded-xl text-xs text-blue-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div>
+                    <p className="font-bold text-white mb-0.5">📋 Asistente de Copiado Asistido a Excel</p>
+                    <p className="text-slate-300">
+                      Modifique cualquier valor si hace falta. Luego haga clic en <strong>Copiar Valores</strong> junto a la fila deseada y pegue en Excel con <code>Ctrl + V</code>.
+                    </p>
+                  </div>
+                  <Button
+                    onClick={handleCopyAllPayloadToClipboard}
+                    className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-1.5 shrink-0"
+                  >
+                    {copiedItemIdx === 'ALL' ? (
+                      <>
+                        <ClipboardCheck className="w-3.5 h-3.5 text-emerald-300" />
+                        ¡Todo Copiado!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        Copiar Todo el Reporte
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+
+              {/* Información General de Encabezado */}
               <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
@@ -707,25 +818,25 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
               <div className="space-y-6">
                 <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
                   <Layers className="w-4 h-4 text-secondary" />
-                  Registros Destino en el Macro Archivo
+                  Tablas y Secciones de Destino en el Macro Archivo
                 </h3>
 
                 {editablePayload.registros && editablePayload.registros.length > 0 ? (
                   editablePayload.registros.map((reg: any, rIdx: number) => (
                     <div key={rIdx} className="bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-4">
-                      {/* Cabecera del Registro */}
+                      {/* Cabecera del Registro con ubicación clara */}
                       <div className="flex flex-col sm:flex-row gap-3 pb-3 border-b border-slate-800 items-start sm:items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="bg-slate-800 text-secondary text-xs font-bold px-2.5 py-1 rounded border border-slate-700">
-                            Hoja: {reg.hoja_destino}
+                        <div className="flex items-center flex-wrap gap-2">
+                          <span className="bg-secondary/20 text-secondary text-xs font-bold px-2.5 py-1 rounded border border-secondary/40 flex items-center gap-1">
+                            📍 Ir a Hoja Excel: <strong>{reg.hoja_destino}</strong>
                           </span>
                           <span className="bg-slate-800 text-slate-200 text-xs font-bold px-2.5 py-1 rounded border border-slate-700">
-                            Bloque: {reg.bloque}
+                            Sección: {reg.bloque}
                           </span>
                         </div>
                       </div>
 
-                      {/* Detalles / Filas */}
+                      {/* Detalles / Filas de la Tabla */}
                       <div className="space-y-4 pt-1">
                         {reg.detalles && reg.detalles.length > 0 ? (
                           reg.detalles.map((det: any, dIdx: number) => {
@@ -736,8 +847,8 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
                               <div key={dIdx} className="bg-slate-900 p-4 rounded-lg border border-slate-800 space-y-3">
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-2">
                                   <div className="flex-1">
-                                    <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                                      {det.sub_bloque ? 'Sub-Bloque / Carrera' : 'Nombre de Actividad / Ítem'}
+                                    <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                                      {det.sub_bloque ? 'Carrera / Mención' : 'Nombre de Actividad / Ítem'}
                                     </label>
                                     <input
                                       type="text"
@@ -753,7 +864,7 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
                                     />
                                   </div>
 
-                                  {/* Botón Copiar Fila */}
+                                  {/* Botón Copiar Fila Individual */}
                                   <Button
                                     type="button"
                                     onClick={() => handleCopyValuesToClipboard(det, itemKey)}
@@ -762,12 +873,12 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
                                     {copiedItemIdx === itemKey ? (
                                       <>
                                         <ClipboardCheck className="w-3.5 h-3.5 text-emerald-400" />
-                                        <span className="text-emerald-400 font-bold">¡Valores Copiados!</span>
+                                        <span className="text-emerald-400 font-bold">¡Copiado!</span>
                                       </>
                                     ) : (
                                       <>
                                         <Copy className="w-3.5 h-3.5 text-secondary" />
-                                        <span>Copiar Valores</span>
+                                        <span>Copiar Valores Fila</span>
                                       </>
                                     )}
                                   </Button>
