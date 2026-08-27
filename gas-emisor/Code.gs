@@ -29,6 +29,29 @@ var MONTH_COLUMN_MAP = {
   "Diciembre": { col1: 40, col2: 41 }
 };
 
+// Mapeo flexible de palabras clave a texto oficial en las filas del Macro Archivo
+function matchKeywordInText(searchedText, textInRow) {
+  var s = searchedText.toLowerCase();
+  var r = textInRow.toLowerCase();
+
+  // Match directo de substring
+  if (r.indexOf(s) !== -1 || s.indexOf(r) !== -1) return true;
+
+  // Normalización para Carreras de Control de Estudios (Pregrado y Postgrado)
+  if ((s.indexOf("administrador") !== -1 || s.indexOf("contador") !== -1) && (r.indexOf("administración") !== -1 || r.indexOf("contaduría") !== -1)) return true;
+  if (s.indexOf("economista") !== -1 && r.indexOf("economía") !== -1) return true;
+  if ((s.indexOf("estadista") !== -1 || s.indexOf("actuario") !== -1) && (r.indexOf("estadística") !== -1 || r.indexOf("actuarial") !== -1)) return true;
+  if (s.indexOf("internacionalista") !== -1 && r.indexOf("estudios internacionales") !== -1) return true;
+  if (s.indexOf("sociól") !== -1 && r.indexOf("sociología") !== -1) return true;
+  if (s.indexOf("trabajador") !== -1 && r.indexOf("trabajo social") !== -1) return true;
+  if (s.indexOf("antropól") !== -1 && r.indexOf("antropología") !== -1) return true;
+
+  // Normalización para Biblioteca y Providencias Estudiantiles
+  if ((s.indexOf("biblioteca") !== -1 || s.indexOf("atención") !== -1 || s.indexOf("atendidos") !== -1) && r.indexOf("atención de los estudiantes") !== -1) return true;
+
+  return false;
+}
+
 function getSpreadsheet(id) {
   var targetId = id || DEFAULT_STAGING_SPREADSHEET_ID;
   if (targetId && targetId.trim() !== "") {
@@ -109,7 +132,7 @@ function escribirReporteEnMacroArchivo(payload, spreadsheetId) {
       var nombreHoja = registro.hoja_destino;
       var targetSheet = macroSs.getSheetByName(nombreHoja);
       
-      // Lista de hojas a inspeccionar (primero la especificada, luego el resto)
+      // Hojas donde buscar
       var sheetsToSearch = [];
       if (targetSheet) {
         sheetsToSearch.push(targetSheet);
@@ -122,20 +145,21 @@ function escribirReporteEnMacroArchivo(payload, spreadsheetId) {
       }
 
       registro.detalles.forEach(function(detalle) {
-        var nombreBuscado = (detalle.sub_bloque || detalle.actividad || "").toString().trim().toLowerCase();
+        var nombreBuscado = (detalle.sub_bloque || detalle.actividad || detalle.descripcion_item || detalle.descripcion || "").toString().trim();
         if (!nombreBuscado) return;
 
         var foundSheet = null;
         var targetRowIndex = -1;
 
+        // 1. Buscar coincidencia exacta o por palabras clave en las hojas
         for (var shIdx = 0; shIdx < sheetsToSearch.length; shIdx++) {
           var currSheet = sheetsToSearch[shIdx];
           if (currSheet.getLastRow() <= 1) continue;
 
           var rowRange = currSheet.getRange(1, 1, currSheet.getLastRow(), 5).getValues();
           for (var r = 0; r < rowRange.length; r++) {
-            var textInRow = rowRange[r].join(" ").toLowerCase();
-            if (textInRow && textInRow.indexOf(nombreBuscado) !== -1) {
+            var textInRow = rowRange[r].join(" ");
+            if (textInRow && matchKeywordInText(nombreBuscado, textInRow)) {
               targetRowIndex = r + 1;
               foundSheet = currSheet;
               break;
@@ -144,10 +168,31 @@ function escribirReporteEnMacroArchivo(payload, spreadsheetId) {
           if (targetRowIndex > 0) break;
         }
 
+        // 2. Si no se encontró fila fija pero hay hoja destino, buscar la primera fila disponible del bloque
+        if (targetRowIndex === -1 && targetSheet && targetSheet.getLastRow() > 1) {
+          foundSheet = targetSheet;
+          // Buscar fila disponible (con ceros o vacía)
+          var rowsInTarget = targetSheet.getRange(1, 1, targetSheet.getLastRow(), 5).getValues();
+          for (var r = 0; r < rowsInTarget.length; r++) {
+            var textInRow = rowsInTarget[r].join(" ").toLowerCase();
+            if (textInRow.indexOf("describa la actividad") !== -1 || textInRow.indexOf("descripción") !== -1) {
+              targetRowIndex = r + 2; // Fila justo después del encabezado
+              break;
+            }
+          }
+        }
+
+        // Escribir valores en el Macro Archivo
         if (foundSheet && targetRowIndex > 0 && detalle.variables) {
           var vars = detalle.variables;
-          var val1 = vars.nuevos_ingresos || vars.nro_actividades || vars.nro_proyectos || vars.nro_acompanamientos_realizados || vars.estudiantes_atendidos || 0;
-          var val2 = vars.egresados || vars.nro_beneficiados || vars.nro_personas_beneficiadas || vars.nro_estudiantes || 0;
+          var val1 = vars.nuevos_ingresos || vars.nro_actividades || vars.nro_proyectos || vars.nro_acompanamientos_realizados || vars.estudiantes_atendidos || vars.nro_eventos || 0;
+          var val2 = vars.egresados || vars.nro_beneficiados || vars.nro_personas_beneficiadas || vars.nro_estudiantes || vars.usuarios_beneficiados || 0;
+
+          // Si la fila estaba vacía, escribir la descripción en Columna A/B
+          var currentValColA = String(foundSheet.getRange(targetRowIndex, 1).getValue() || "").trim();
+          if (!currentValColA || currentValColA === "0") {
+            foundSheet.getRange(targetRowIndex, 1).setValue(nombreBuscado);
+          }
 
           foundSheet.getRange(targetRowIndex, colInfo.col1).setValue(val1);
           if (colInfo.col2 && val2 > 0) {
