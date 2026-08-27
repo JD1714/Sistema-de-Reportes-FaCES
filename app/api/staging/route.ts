@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 
-// ID por defecto de la Hoja de Staging
 const DEFAULT_STAGING_SPREADSHEET_ID = '18-fWk0JZWmB3MeKC6LWL-8qTWqSdAbo_SdA6XNQ2ar4'
 
 /**
@@ -66,7 +65,7 @@ export async function GET(request: Request) {
 }
 
 /**
- * POST: Registra o Aprueba reportes enviando la orden a Google Apps Script
+ * POST: Envía órdenes de emisión y aprobación a la Web App del contenedor
  */
 export async function POST(request: Request) {
   try {
