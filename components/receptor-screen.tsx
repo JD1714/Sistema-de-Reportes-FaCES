@@ -25,7 +25,9 @@ import {
   ClipboardCheck,
   ArrowDown,
   Info,
-  Trash2
+  Trash2,
+  Type,
+  Hash
 } from 'lucide-react'
 
 interface ReceptorScreenProps {
@@ -230,49 +232,23 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
     setTimeout(() => setCopiedItemIdx(null), 2500)
   }
 
-  // Copiar valores de una carrera individual en horizontal
-  const handleCopySingleCarreraToClipboard = (det: any, itemKey: string) => {
-    const vars = det.variables || {}
-    const nuevos = vars.nuevos_ingresos !== undefined ? vars.nuevos_ingresos : ''
-    const egresados = vars.egresados !== undefined ? vars.egresados : ''
-    const retiros = vars.retiros !== undefined ? vars.retiros : ''
-
-    const tabString = `${nuevos}\t\t${egresados}\t${retiros}`
-    navigator.clipboard.writeText(tabString)
-    setCopiedItemIdx(itemKey)
+  // Copiar solo el NOMBRE / ACTIVIDAD de un ítem (para pegar en la Columna A/B de Excel)
+  const handleCopyTitleToClipboard = (det: any, itemKey: string) => {
+    const titleText = det.sub_bloque || det.actividad || det.descripcion_item || det.descripcion || ''
+    navigator.clipboard.writeText(titleText)
+    setCopiedItemIdx(`TITLE_${itemKey}`)
     setTimeout(() => setCopiedItemIdx(null), 2500)
   }
 
-  // Copiar valores tabulados individuales genéricos
-  const handleCopyValuesToClipboard = (det: any, itemKey: string) => {
+  // Copiar solo las CANTIDADES / METRICAS de un ítem (para pegar en las celdas del mes)
+  const handleCopyMetricsToClipboard = (det: any, itemKey: string) => {
     const vars = det.variables || {}
     const valuesArray: number[] = Object.values(vars).map(v => typeof v === 'number' ? v : parseInt(String(v)) || 0)
     
-    const textToCopy = valuesArray.length > 0 ? valuesArray.join('\t') : (det.sub_bloque || det.actividad || det.descripcion_item || det.descripcion || '')
+    const textToCopy = valuesArray.join('\t')
 
     navigator.clipboard.writeText(textToCopy)
-    setCopiedItemIdx(itemKey)
-    setTimeout(() => setCopiedItemIdx(null), 2500)
-  }
-
-  // Copiar resumen completo del reporte
-  const handleCopyAllPayloadToClipboard = () => {
-    if (!editablePayload || !editablePayload.registros) return
-
-    let summaryLines: string[] = []
-    summaryLines.push(`REPORTE: ${editablePayload.departamento_emisor || ''} - MES: ${editablePayload.mes_reportado || ''}`)
-    
-    editablePayload.registros.forEach((reg: any) => {
-      summaryLines.push(`\n[Hoja: ${reg.hoja_destino} | Bloque: ${reg.bloque}]`)
-      reg.detalles?.forEach((det: any) => {
-        const title = det.sub_bloque || det.actividad || det.descripcion_item || det.descripcion || 'Detalle'
-        const vars = det.variables ? Object.entries(det.variables).map(([k, v]) => `${k}: ${v}`).join(' | ') : ''
-        summaryLines.push(`- ${title}\t${vars}`)
-      })
-    })
-
-    navigator.clipboard.writeText(summaryLines.join('\n'))
-    setCopiedItemIdx('ALL')
+    setCopiedItemIdx(`METRICS_${itemKey}`)
     setTimeout(() => setCopiedItemIdx(null), 2500)
   }
 
@@ -362,6 +338,7 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
   const approvedCount = reports.filter((r) => r.estado === 'Aprobado').length
 
   const isControlDeEstudios = editablePayload?.departamento_emisor?.toLowerCase().includes('control de estudios')
+  const isEnero = editablePayload?.mes_reportado?.toLowerCase().includes('enero')
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
@@ -763,7 +740,9 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
                         Asistente Especializado: Control de Estudios (7 Carreras)
                       </h3>
                       <p className="text-xs text-slate-400 mt-0.5">
-                        Seleccione el formato de copiado preferido según la orientación de su tabla en Excel.
+                        {isEnero
+                          ? 'Modo Enero: Incluye la columna de Prosecución Inicial.'
+                          : 'Copia las columnas de métricas verticalmente para llenar las 7 carreras en Excel de un solo golpe.'}
                       </p>
                     </div>
                     <span className="text-[11px] bg-primary/20 text-primary border border-primary/40 font-bold px-2.5 py-1 rounded-full">
@@ -771,13 +750,13 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
                     </span>
                   </div>
 
-                  {/* Modo A: Copiado por Columna Vertical (Hacia abajo) */}
+                  {/* Copiado por Columna Vertical (Hacia abajo) */}
                   <div className="space-y-2">
                     <p className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                       <ArrowDown className="w-4 h-4 text-emerald-400" />
-                      Opción 1: Copiado por Columna Vertical (Llenar las 7 Carreras hacia abajo con 1 Ctrl+V)
+                      Copiado por Columna Vertical (Llenar las 7 Carreras hacia abajo con 1 Ctrl+V)
                     </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className={`grid grid-cols-1 ${isEnero ? 'sm:grid-cols-4' : 'sm:grid-cols-3'} gap-3`}>
                       <Button
                         type="button"
                         onClick={() => handleCopyVerticalColumnToClipboard('nuevos_ingresos')}
@@ -786,15 +765,36 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
                         {copiedItemIdx === 'CONTROL_VERT_nuevos_ingresos' ? (
                           <>
                             <ClipboardCheck className="w-4 h-4 text-emerald-400" />
-                            ¡Columna Nuevos Ingresos Copiada!
+                            ¡Columna Copiada!
                           </>
                         ) : (
                           <>
                             <Copy className="w-4 h-4 text-emerald-400" />
-                            Copiar Columna: Nuevos Ingresos
+                            Nuevos Ingresos
                           </>
                         )}
                       </Button>
+
+                      {/* Botón Prosecución - SOLO en Enero */}
+                      {isEnero && (
+                        <Button
+                          type="button"
+                          onClick={() => handleCopyVerticalColumnToClipboard('prosecucion')}
+                          className="bg-purple-950/80 hover:bg-purple-900 text-purple-300 border border-purple-700/80 text-xs font-semibold py-2.5 flex items-center justify-center gap-2"
+                        >
+                          {copiedItemIdx === 'CONTROL_VERT_prosecucion' ? (
+                            <>
+                              <ClipboardCheck className="w-4 h-4 text-purple-400" />
+                              ¡Columna Copiada!
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-4 h-4 text-purple-400" />
+                              Prosecución (Enero)
+                            </>
+                          )}
+                        </Button>
+                      )}
 
                       <Button
                         type="button"
@@ -804,12 +804,12 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
                         {copiedItemIdx === 'CONTROL_VERT_egresados' ? (
                           <>
                             <ClipboardCheck className="w-4 h-4 text-blue-400" />
-                            ¡Columna Egresados Copiada!
+                            ¡Columna Copiada!
                           </>
                         ) : (
                           <>
                             <Copy className="w-4 h-4 text-blue-400" />
-                            Copiar Columna: Egresados
+                            Egresados
                           </>
                         )}
                       </Button>
@@ -822,12 +822,12 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
                         {copiedItemIdx === 'CONTROL_VERT_retiros' ? (
                           <>
                             <ClipboardCheck className="w-4 h-4 text-amber-400" />
-                            ¡Columna Retiros Copiada!
+                            ¡Columna Copiada!
                           </>
                         ) : (
                           <>
                             <Copy className="w-4 h-4 text-amber-400" />
-                            Copiar Columna: Retiros
+                            Retiros
                           </>
                         )}
                       </Button>
@@ -838,7 +838,7 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
                   <div className="bg-slate-900 p-3 rounded-lg border border-slate-800 text-xs text-slate-300 flex items-start gap-2">
                     <Info className="w-4 h-4 text-secondary shrink-0 mt-0.5" />
                     <span>
-                      <strong>Instrucción para Copiado por Columna Vertical:</strong> Haga clic en la celda superior de <em>Nuevos Ingresos</em> para la primera carrera (Administración) en el mes de <strong>{editablePayload.mes_reportado}</strong> y presione <code>Ctrl + V</code>. Pegará las 7 carreras hacia abajo verticalmente.
+                      <strong>Instrucción:</strong> Haga clic en la primera celda de la métrica deseada para la primera carrera (Administración) en el mes de <strong>{editablePayload.mes_reportado}</strong> y presione <code>Ctrl + V</code>. Pegará las 7 carreras hacia abajo verticalmente.
                     </span>
                   </div>
                 </div>
@@ -846,27 +846,11 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
                 /* Banner Guía Estándar para los demás departamentos */
                 <div className="bg-blue-950/50 border border-blue-800/60 p-4 rounded-xl text-xs text-blue-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div>
-                    <p className="font-bold text-white mb-0.5">📋 Asistente de Copiado Asistido a Excel</p>
+                    <p className="font-bold text-white mb-0.5">📋 Asistente de Copiado por Segmento a Excel</p>
                     <p className="text-slate-300">
-                      Modifique cualquier valor si hace falta. Luego haga clic en <strong>Copiar Valores</strong> junto a la fila deseada y pegue en Excel con <code>Ctrl + V</code>.
+                      Utilice <strong>Copiar Nombre</strong> para la Columna A (Texto) y <strong>Copiar Cantidades</strong> para las celdas del mes (Números).
                     </p>
                   </div>
-                  <Button
-                    onClick={handleCopyAllPayloadToClipboard}
-                    className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-1.5 shrink-0"
-                  >
-                    {copiedItemIdx === 'ALL' ? (
-                      <>
-                        <ClipboardCheck className="w-3.5 h-3.5 text-emerald-300" />
-                        ¡Todo Copiado!
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3.5 h-3.5" />
-                        Copiar Todo el Reporte
-                      </>
-                    )}
-                  </Button>
                 </div>
               )}
 
@@ -950,28 +934,48 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
                                     />
                                   </div>
 
-                                  {/* Botón Copiar Fila Individual */}
-                                  <Button
-                                    type="button"
-                                    onClick={() =>
-                                      isControlDeEstudios
-                                        ? handleCopySingleCarreraToClipboard(det, itemKey)
-                                        : handleCopyValuesToClipboard(det, itemKey)
-                                    }
-                                    className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 text-xs py-1 px-3 flex items-center gap-1.5 shrink-0"
-                                  >
-                                    {copiedItemIdx === itemKey ? (
-                                      <>
-                                        <ClipboardCheck className="w-3.5 h-3.5 text-emerald-400" />
-                                        <span className="text-emerald-400 font-bold">¡Copiado!</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Copy className="w-3.5 h-3.5 text-secondary" />
-                                        <span>{isControlDeEstudios ? 'Copiar Fila Carrera (Saltando Fórmula)' : 'Copiar Valores Fila'}</span>
-                                      </>
-                                    )}
-                                  </Button>
+                                  {/* Botones de Copiado Segmentado por Fila */}
+                                  {!isControlDeEstudios && (
+                                    <div className="flex items-center gap-2 shrink-0">
+                                      <Button
+                                        type="button"
+                                        onClick={() => handleCopyTitleToClipboard(det, itemKey)}
+                                        className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 text-xs py-1 px-2.5 flex items-center gap-1"
+                                      >
+                                        {copiedItemIdx === `TITLE_${itemKey}` ? (
+                                          <>
+                                            <ClipboardCheck className="w-3.5 h-3.5 text-emerald-400" />
+                                            <span className="text-emerald-400 font-bold">¡Nombre Copiado!</span>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Type className="w-3.5 h-3.5 text-secondary" />
+                                            <span>Copiar Nombre</span>
+                                          </>
+                                        )}
+                                      </Button>
+
+                                      {det.variables && Object.keys(det.variables).length > 0 && (
+                                        <Button
+                                          type="button"
+                                          onClick={() => handleCopyMetricsToClipboard(det, itemKey)}
+                                          className="bg-emerald-950 hover:bg-emerald-900 text-emerald-200 border border-emerald-700 text-xs py-1 px-2.5 flex items-center gap-1"
+                                        >
+                                          {copiedItemIdx === `METRICS_${itemKey}` ? (
+                                            <>
+                                              <ClipboardCheck className="w-3.5 h-3.5 text-emerald-400" />
+                                              <span className="text-emerald-400 font-bold">¡Cantidades Copiadas!</span>
+                                            </>
+                                          ) : (
+                                            <>
+                                              <Hash className="w-3.5 h-3.5 text-emerald-400" />
+                                              <span>Copiar Cantidades</span>
+                                            </>
+                                          )}
+                                        </Button>
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
 
                                 {/* Variables Numéricas */}
