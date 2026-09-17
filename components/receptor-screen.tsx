@@ -89,16 +89,32 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
   const [copiedItemIdx, setCopiedItemIdx] = useState<string | null>(null)
   const [feedbackModal, setFeedbackModal] = useState<{ title: string; message: string; type: 'success' | 'info' | 'error' } | null>(null)
 
-  // Cargar IDs guardados al iniciar
+  // Meses Habilitados
+  const ALL_MONTHS = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+  ]
+  const [allowedMonths, setAllowedMonths] = useState<string[]>(ALL_MONTHS)
+
+  // Cargar IDs y Meses guardados al iniciar
   useEffect(() => {
     const savedStagingId = localStorage.getItem('FACES_STAGING_SHEET_ID')
     const savedMacroId = localStorage.getItem('FACES_MACRO_SHEET_ID')
+    const savedMonths = localStorage.getItem('FACES_ALLOWED_MONTHS')
 
     if (savedStagingId && savedStagingId.trim() !== '') {
       setStagingSheetId(savedStagingId)
     }
     if (savedMacroId && savedMacroId.trim() !== '') {
       setMacroSheetId(savedMacroId)
+    }
+    if (savedMonths) {
+      try {
+        const parsed = JSON.parse(savedMonths)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setAllowedMonths(parsed)
+        }
+      } catch (e) {}
     }
   }, [])
 
@@ -195,13 +211,30 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
       }
     }
 
-    setConfigSuccessMsg('¡Hojas de cálculo vinculadas exitosamente!')
+    // Guardar meses habilitados
+    localStorage.setItem('FACES_ALLOWED_MONTHS', JSON.stringify(allowedMonths))
+    // Notificar a otras ventanas/componentes
+    window.dispatchEvent(new Event('storage'))
+
+    setConfigSuccessMsg('¡Configuración y Meses actualizados exitosamente!')
     setTimeout(() => {
       setConfigSuccessMsg(null)
       setShowConfigModal(false)
       setInputStagingUrl('')
       setInputMacroUrl('')
     }, 1500)
+  }
+
+  const handleToggleMonth = (month: string) => {
+    setAllowedMonths((prev) => {
+      if (prev.includes(month)) {
+        // Evitar desmarcar todos si solo queda 1
+        if (prev.length === 1) return prev
+        return prev.filter((m) => m !== month)
+      } else {
+        return [...prev, month]
+      }
+    })
   }
 
   // Abrir modal de edición
@@ -672,6 +705,62 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
                   onChange={(e) => setInputMacroUrl(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:border-primary focus:outline-none"
                 />
+              </div>
+
+              {/* Control de Meses Habilitados */}
+              <div className="space-y-2 pt-2 border-t border-slate-800">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                    📅 Meses Habilitados para Emisión
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setAllowedMonths(ALL_MONTHS)}
+                      className="text-[11px] text-secondary hover:underline font-semibold"
+                    >
+                      Todos
+                    </button>
+                    <span className="text-slate-600">|</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const currentMonthName = [
+                          'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                          'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+                        ][new Date().getMonth()]
+                        setAllowedMonths([currentMonthName])
+                      }}
+                      className="text-[11px] text-primary hover:underline font-semibold"
+                    >
+                      Solo Mes Actual
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 bg-slate-950 p-3 rounded-lg border border-slate-800">
+                  {ALL_MONTHS.map((m) => {
+                    const isChecked = allowedMonths.includes(m)
+                    return (
+                      <label
+                        key={m}
+                        className={`flex items-center gap-1.5 text-xs font-semibold px-2 py-1.5 rounded cursor-pointer transition-colors ${
+                          isChecked
+                            ? 'bg-secondary/20 text-secondary border border-secondary/40'
+                            : 'bg-slate-900 text-slate-500 border border-slate-800 hover:text-slate-300'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => handleToggleMonth(m)}
+                          className="rounded border-slate-700 text-secondary focus:ring-secondary h-3.5 w-3.5"
+                        />
+                        <span>{m}</span>
+                      </label>
+                    )
+                  })}
+                </div>
               </div>
             </div>
 

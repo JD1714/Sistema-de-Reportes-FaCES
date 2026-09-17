@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 
@@ -88,6 +88,32 @@ const CATEGORIES = [
 
 
 export default function EmisorScreen({ onBack }: EmisorScreenProps) {
+  const ALL_MONTHS = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+  ]
+  const [allowedMonths, setAllowedMonths] = useState<string[]>(ALL_MONTHS)
+
+  useEffect(() => {
+    const loadAllowedMonths = () => {
+      const saved = localStorage.getItem('FACES_ALLOWED_MONTHS')
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved)
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setAllowedMonths(parsed)
+            return
+          }
+        } catch (e) {}
+      }
+      setAllowedMonths(ALL_MONTHS)
+    }
+
+    loadAllowedMonths()
+    window.addEventListener('storage', loadAllowedMonths)
+    return () => window.removeEventListener('storage', loadAllowedMonths)
+  }, [])
+
   const [selectedDepartment, setSelectedDepartment] = useState('')
   const [formData, setFormData] = useState({
     title: '',
@@ -1343,10 +1369,7 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(e.target.value)}
                 >
-                  {[
-                    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-                  ].map((month) => (
+                  {ALL_MONTHS.filter(m => allowedMonths.includes(m)).map((month) => (
                     <option key={month} value={month}>
                       {month}
                     </option>
@@ -1478,10 +1501,7 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                   value={selectedPostgradoMonth}
                   onChange={(e) => setSelectedPostgradoMonth(e.target.value)}
                 >
-                  {[
-                    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-                  ].map((month) => (
+                  {ALL_MONTHS.filter(m => allowedMonths.includes(m)).map((month) => (
                     <option key={month} value={month}>
                       {month}
                     </option>
@@ -1615,10 +1635,7 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                   value={selectedComunitarioMonth}
                   onChange={(e) => setSelectedComunitarioMonth(e.target.value)}
                 >
-                  {[
-                    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-                  ].map((month) => (
+                  {ALL_MONTHS.filter(m => allowedMonths.includes(m)).map((month) => (
                     <option key={month} value={month}>
                       {month}
                     </option>
@@ -1889,10 +1906,7 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                     value={selectedBibliotecaMonth}
                     onChange={(e) => setSelectedBibliotecaMonth(e.target.value)}
                   >
-                    {[
-                      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-                    ].map((month) => (
+                    {ALL_MONTHS.filter(m => allowedMonths.includes(m)).map((month) => (
                       <option key={month} value={month}>
                         {month}
                       </option>
@@ -2052,10 +2066,7 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                     value={selectedDesarrolloMonth}
                     onChange={(e) => setSelectedDesarrolloMonth(e.target.value)}
                   >
-                    {[
-                      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-                    ].map((month) => (
+                    {ALL_MONTHS.filter(m => allowedMonths.includes(m)).map((month) => (
                       <option key={month} value={month}>
                         {month}
                       </option>
@@ -2248,10 +2259,7 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                     value={selectedExtensionMonth}
                     onChange={(e) => setSelectedExtensionMonth(e.target.value)}
                   >
-                    {[
-                      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-                    ].map((month) => (
+                    {ALL_MONTHS.filter(m => allowedMonths.includes(m)).map((month) => (
                       <option key={month} value={month}>
                         {month}
                       </option>
@@ -2738,10 +2746,7 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                     value={selectedComprasMonth}
                     onChange={(e) => setSelectedComprasMonth(e.target.value)}
                   >
-                    {[
-                      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-                    ].map((month) => (
+                    {ALL_MONTHS.filter(m => allowedMonths.includes(m)).map((month) => (
                       <option key={month} value={month}>
                         {month}
                       </option>
@@ -3014,10 +3019,7 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                     value={selectedProfesionalMonth}
                     onChange={(e) => setSelectedProfesionalMonth(e.target.value)}
                   >
-                    {[
-                      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-                    ].map((month) => (
+                    {ALL_MONTHS.filter(m => allowedMonths.includes(m)).map((month) => (
                       <option key={month} value={month}>
                         {month}
                       </option>
@@ -3158,10 +3160,7 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                     value={selectedInvestigacionesMonth}
                     onChange={(e) => setSelectedInvestigacionesMonth(e.target.value)}
                   >
-                    {[
-                      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-                    ].map((month) => (
+                    {ALL_MONTHS.filter(m => allowedMonths.includes(m)).map((month) => (
                       <option key={month} value={month}>
                         {month}
                       </option>
