@@ -243,7 +243,7 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
   // Copiar solo las CANTIDADES / METRICAS de un ítem (para pegar en las celdas del mes)
   const handleCopyMetricsToClipboard = (det: any, itemKey: string) => {
     const vars = det.variables || {}
-    const valuesArray: number[] = Object.values(vars).map(v => typeof v === 'number' ? v : parseInt(String(v)) || 0)
+    const valuesArray = Object.values(vars).map(v => typeof v === 'number' ? v : (v !== null && v !== undefined ? String(v) : ''))
     
     const textToCopy = valuesArray.join('\t')
 
@@ -978,11 +978,11 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
                                   )}
                                 </div>
 
-                                {/* Variables Numéricas */}
+                                {/* Variables / Métricas */}
                                 {det.variables && Object.keys(det.variables).length > 0 && (
                                   <div>
                                     <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
-                                      Métricas Numéricas
+                                      Métricas y Datos
                                     </label>
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                       {Object.entries(det.variables).map(([vKey, vVal]) => (
@@ -991,12 +991,12 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
                                             {vKey}
                                           </span>
                                           <input
-                                            type="number"
-                                            min={0}
-                                            value={vVal as number}
+                                            type={typeof vVal === 'number' ? 'number' : 'text'}
+                                            min={typeof vVal === 'number' ? 0 : undefined}
+                                            value={vVal as any}
                                             onChange={(e) => {
                                               const newRegs = [...editablePayload.registros]
-                                              newRegs[rIdx].detalles[dIdx].variables[vKey] = parseInt(e.target.value) || 0
+                                              newRegs[rIdx].detalles[dIdx].variables[vKey] = typeof vVal === 'number' ? (parseInt(e.target.value) || 0) : e.target.value
                                               setEditablePayload({ ...editablePayload, registros: newRegs })
                                             }}
                                             className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-100 font-bold focus:border-secondary focus:outline-none text-right"

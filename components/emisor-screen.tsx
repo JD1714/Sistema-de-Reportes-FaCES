@@ -666,11 +666,12 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
 
   // States for Coordinación de Extensión
   const [selectedExtensionMonth, setSelectedExtensionMonth] = useState('Enero')
-  const [extensionActiveTab, setExtensionActiveTab] = useState<'sociocultural' | 'deportiva' | 'mallacurricular'>('sociocultural')
+  const [extensionActiveTab, setExtensionActiveTab] = useState<'sociocultural' | 'deportiva' | 'mallacurricular' | 'programasformacion'>('sociocultural')
 
   const [nothingToReportSociocultural, setNothingToReportSociocultural] = useState(false)
   const [nothingToReportDeportiva, setNothingToReportDeportiva] = useState(false)
   const [nothingToReportMallaCurricular, setNothingToReportMallaCurricular] = useState(false)
+  const [nothingToReportProgramasFormacion, setNothingToReportProgramasFormacion] = useState(false)
 
   interface SocioculturalItem {
     descripcion_item: string
@@ -689,6 +690,13 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     nro_actividades: number
   }
 
+  interface ProgramasFormacionItem {
+    descripcion_item: string
+    nro_actividades: number
+    tipo_actividad: string
+    nro_beneficiarios: number
+  }
+
   const [socioculturalItems, setSocioculturalItems] = useState<SocioculturalItem[]>([
     { descripcion_item: '', nro_eventos: 0, usuarios_beneficiados: 0 }
   ])
@@ -699,6 +707,10 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
 
   const [mallaCurricularItems, setMallaCurricularItems] = useState<MallaCurricularItem[]>([
     { descripcion_item: '', nro_actividades: 0 }
+  ])
+
+  const [programasFormacionItems, setProgramasFormacionItems] = useState<ProgramasFormacionItem[]>([
+    { descripcion_item: '', nro_actividades: 0, tipo_actividad: '', nro_beneficiarios: 0 }
   ])
 
   // Handlers for Sociocultural
@@ -755,6 +767,24 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     })
   }
 
+  // Handlers for Programas de Formación
+  const handleAddProgramasFormacionItem = () => {
+    setProgramasFormacionItems((prev) => [
+      ...prev,
+      { descripcion_item: '', nro_actividades: 0, tipo_actividad: '', nro_beneficiarios: 0 }
+    ])
+  }
+  const handleRemoveProgramasFormacionItem = (index: number) => {
+    setProgramasFormacionItems((prev) => prev.filter((_, i) => i !== index))
+  }
+  const handleProgramasFormacionItemChange = (index: number, field: keyof ProgramasFormacionItem, value: string | number) => {
+    setProgramasFormacionItems((prev) => {
+      const updated = [...prev]
+      updated[index] = { ...updated[index], [field]: value }
+      return updated
+    })
+  }
+
   const handleCoordinacionExtensionSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -762,16 +792,19 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     const isSocioculturalCompleted = nothingToReportSociocultural || socioculturalItems.some(item => item.descripcion_item.trim() !== '')
     const isDeportivaCompleted = nothingToReportDeportiva || deportivaItems.some(item => item.descripcion_item.trim() !== '')
     const isMallaCurricularCompleted = nothingToReportMallaCurricular || mallaCurricularItems.some(item => item.descripcion_item.trim() !== '')
+    const isProgramasFormacionCompleted = nothingToReportProgramasFormacion || programasFormacionItems.some(item => item.descripcion_item.trim() !== '')
 
-    if (!isSocioculturalCompleted || !isDeportivaCompleted || !isMallaCurricularCompleted) {
+    if (!isSocioculturalCompleted || !isDeportivaCompleted || !isMallaCurricularCompleted || !isProgramasFormacionCompleted) {
       const missing = []
       if (!isSocioculturalCompleted) missing.push('Actividades Socio-culturales (Extensión)')
       if (!isDeportivaCompleted) missing.push('Actividades Deportivas (Estudiantes)')
       if (!isMallaCurricularCompleted) missing.push('Actualización Malla Curricular (Academia)')
+      if (!isProgramasFormacionCompleted) missing.push('Programas de Formación (Extensión)')
 
       if (!isSocioculturalCompleted) setExtensionActiveTab('sociocultural')
       else if (!isDeportivaCompleted) setExtensionActiveTab('deportiva')
       else if (!isMallaCurricularCompleted) setExtensionActiveTab('mallacurricular')
+      else if (!isProgramasFormacionCompleted) setExtensionActiveTab('programasformacion')
 
       alert(`Atención: Debes contestar todas las pestañas antes de enviar el reporte.\n\nFalta por contestar:\n- ${missing.join('\n- ')}\n\n(Agrega al menos una actividad o marca 'Nada que reportar en esta sección').`)
       return
@@ -812,6 +845,18 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
               nro_actividades: item.nro_actividades
             }
           }))
+        },
+        {
+          hoja_destino: "Extensión",
+          bloque: "Programas de formación",
+          detalles: nothingToReportProgramasFormacion ? [] : programasFormacionItems.map((item) => ({
+            descripcion_item: item.descripcion_item,
+            variables: {
+              nro_actividades: item.nro_actividades,
+              tipo_actividad: item.tipo_actividad,
+              nro_beneficiarios: item.nro_beneficiarios
+            }
+          }))
         }
       ]
     }
@@ -826,9 +871,11 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     setNothingToReportSociocultural(false)
     setNothingToReportDeportiva(false)
     setNothingToReportMallaCurricular(false)
+    setNothingToReportProgramasFormacion(false)
     setSocioculturalItems([{ descripcion_item: '', nro_eventos: 0, usuarios_beneficiados: 0 }])
     setDeportivaItems([{ descripcion_item: '', nro_eventos_realizados: 0, nro_beneficiarios: 0 }])
     setMallaCurricularItems([{ descripcion_item: '', nro_actividades: 0 }])
+    setProgramasFormacionItems([{ descripcion_item: '', nro_actividades: 0, tipo_actividad: '', nro_beneficiarios: 0 }])
     setSelectedDepartment('')
   }
 
@@ -2262,6 +2309,22 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                       <span className="ml-2 text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold px-1.5 py-0.5 rounded">•</span>
                     )}
                   </button>
+                  <button
+                    type="button"
+                    className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors flex items-center ${
+                      extensionActiveTab === 'programasformacion'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-muted-foreground hover:text-foreground'
+                    }`}
+                    onClick={() => setExtensionActiveTab('programasformacion')}
+                  >
+                    Programas de Formación (Extensión)
+                    {(nothingToReportProgramasFormacion || programasFormacionItems.some(i => i.descripcion_item.trim() !== '')) ? (
+                      <span className="ml-2 text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold px-1.5 py-0.5 rounded">✓</span>
+                    ) : (
+                      <span className="ml-2 text-xs bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold px-1.5 py-0.5 rounded">•</span>
+                    )}
+                  </button>
                 </div>
 
                 {/* Tab content: Socio-culturales */}
@@ -2517,6 +2580,109 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                                     value={item.nro_actividades}
                                     onChange={(e) => handleMallaCurricularItemChange(idx, 'nro_actividades', parseInt(e.target.value) || 0)}
                                   />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Tab content: Programas de Formación */}
+                {extensionActiveTab === 'programasformacion' && (
+                  <div className="space-y-6 pt-4">
+                    <div className="flex items-center space-x-2 bg-muted/40 p-4 rounded-lg border border-border">
+                      <input
+                        type="checkbox"
+                        id="nothing-programasformacion"
+                        className="rounded border-border text-primary focus:ring-primary h-4 w-4 cursor-pointer"
+                        checked={nothingToReportProgramasFormacion}
+                        onChange={(e) => setNothingToReportProgramasFormacion(e.target.checked)}
+                      />
+                      <label htmlFor="nothing-programasformacion" className="text-sm font-medium text-foreground select-none cursor-pointer">
+                        Nada que reportar en esta sección (Programas de Formación)
+                      </label>
+                    </div>
+
+                    {!nothingToReportProgramasFormacion && (
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <h3 className="text-lg font-bold text-foreground">Programas de Formación Continua</h3>
+                          <Button
+                            type="button"
+                            onClick={handleAddProgramasFormacionItem}
+                            variant="outline"
+                            className="text-xs flex items-center gap-1 py-1.5 px-3 border border-border bg-card text-foreground hover:bg-muted"
+                          >
+                            + Agregar Programa
+                          </Button>
+                        </div>
+
+                        <div className="space-y-4">
+                          {programasFormacionItems.map((item, idx) => (
+                            <div key={idx} className="p-5 rounded-xl border border-border bg-muted/20 space-y-4 relative">
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs font-bold text-muted-foreground uppercase">Programa #{idx + 1}</span>
+                                {programasFormacionItems.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveProgramasFormacionItem(idx)}
+                                    className="text-red-500 hover:text-red-700 text-xs font-semibold"
+                                  >
+                                    Eliminar
+                                  </button>
+                                )}
+                              </div>
+
+                              <div className="grid grid-cols-1 gap-4">
+                                <div className="space-y-1">
+                                  <label className="text-xs font-semibold text-muted-foreground">Descripción del Programa / Actividad</label>
+                                  <input
+                                    type="text"
+                                    required
+                                    placeholder="Ej. Taller de Formación en Gestión Tributaria..."
+                                    className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                    value={item.descripcion_item}
+                                    onChange={(e) => handleProgramasFormacionItemChange(idx, 'descripcion_item', e.target.value)}
+                                  />
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                  <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-muted-foreground">Nro. de Actividades</label>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      required
+                                      className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                      value={item.nro_actividades}
+                                      onChange={(e) => handleProgramasFormacionItemChange(idx, 'nro_actividades', parseInt(e.target.value) || 0)}
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-muted-foreground">Tipo de Actividad</label>
+                                    <input
+                                      type="text"
+                                      required
+                                      placeholder="Ej. Taller, Curso, Seminario..."
+                                      className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                      value={item.tipo_actividad}
+                                      onChange={(e) => handleProgramasFormacionItemChange(idx, 'tipo_actividad', e.target.value)}
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-muted-foreground">Nro. de Beneficiarios</label>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      required
+                                      className="w-full rounded-lg border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-none"
+                                      value={item.nro_beneficiarios}
+                                      onChange={(e) => handleProgramasFormacionItemChange(idx, 'nro_beneficiarios', parseInt(e.target.value) || 0)}
+                                    />
+                                  </div>
                                 </div>
                               </div>
                             </div>
