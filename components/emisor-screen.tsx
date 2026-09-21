@@ -248,7 +248,7 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     const success = await sendReportToStaging(payload)
     if (!success) return
 
-    // Reset form & return to department selection
+    // Reset form fields
     setSelectedMonth('Enero')
     setPregradoCareers({
       'Administradores y Contadores Públicos': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
@@ -259,7 +259,6 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
       'Trabajadores Sociales': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
       'Antropólogos': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
     })
-    setSelectedDepartment('')
   }
 
   // States for Control de Estudios - Postgrado
@@ -376,7 +375,6 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
       'Doctorado en Gestión de Investigación y Desarrollo': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
       'Doctorado en Seguridad Social': { nuevos_ingresos: 0, egresados: 0, retiros: 0, prosecucion: 0 },
     })
-    setSelectedDepartment('')
   }
 
   // States for Servicio Comunitario
@@ -502,14 +500,13 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     const success = await sendReportToStaging(payload)
     if (!success) return
 
-    // Reset Form & return to department selection
+    // Reset Form
     setSelectedComunitarioMonth('Enero')
     setComunitarioActiveTab('academia')
     setNothingToReportAcademia(false)
     setNothingToReportExtension(false)
     setAcademiaItems([{ descripcion_item: '', actividades_realizadas: 0, estudiantes_atendidos: 0 }])
     setExtensionItems([{ descripcion_item: '', actividades_realizadas: 0, beneficiarios: 0 }])
-    setSelectedDepartment('')
   }
 
   // States for Biblioteca
@@ -589,12 +586,11 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     const success = await sendReportToStaging(payload)
     if (!success) return
 
-    // Reset Form & return to department selection
+    // Reset Form
     setSelectedBibliotecaMonth('Enero')
     setNothingToReportBiblioteca(false)
     setFixedActivityAtendidos(0)
     setBibliotecaCustomItems([])
-    setSelectedDepartment('')
   }
 
   // States for Desarrollo Estudiantil
@@ -717,7 +713,6 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
       "Evaluación psicológica grupal": { servicios_prestados: 0, estudiantes_beneficiados: 0 }
     })
     setDesarrolloSpecialItems([])
-    setSelectedDepartment('')
   }
 
   // States for Coordinación de Extensión
@@ -932,7 +927,6 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     setDeportivaItems([{ descripcion_item: '', nro_eventos_realizados: 0, nro_beneficiarios: 0 }])
     setMallaCurricularItems([{ descripcion_item: '', nro_actividades: 0 }])
     setProgramasFormacionItems([{ descripcion_item: '', nro_actividades: 0, tipo_actividad: '', nro_beneficiarios: 0 }])
-    setSelectedDepartment('')
   }
 
   // States for Departamento de Compras
@@ -1051,7 +1045,6 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     setNothingToReportMantenimiento(false)
     setGestionItems([{ descripcion_item: '', nro_actividad: 0, nro_beneficiados: 0 }])
     setMantenimientoItems([{ descripcion_item: '', nro_actividad: 0, nro_beneficiados: 0 }])
-    setSelectedDepartment('')
   }
 
   // States for Centro de Extensión Profesional
@@ -1115,11 +1108,10 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     const success = await sendReportToStaging(payload)
     if (!success) return
 
-    // Reset Form & return to department selection
+    // Reset Form
     setSelectedProfesionalMonth('Enero')
     setNothingToReportProfesional(false)
     setProfesionalItems([{ descripcion_item: '', nro_acompanamientos_realizados: 0, nro_personas_beneficiadas: 0 }])
-    setSelectedDepartment('')
   }
 
   // States for Instituto de Investigaciones
@@ -1245,14 +1237,13 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     const success = await sendReportToStaging(payload)
     if (!success) return
 
-    // Reset Form & return to department selection
+    // Reset Form
     setSelectedInvestigacionesMonth('Enero')
     setInvestigacionesActiveTab('acompanamiento')
     setNothingToReportAcompanamiento(false)
     setNothingToReportTecnologias(false)
     setInvestigacionesAcompanamientoItems([{ descripcion_item: '', nro_acompanamientos_realizados: 0, nro_personas_beneficiadas: 0 }])
     setInvestigacionesTecnologiasItems([{ descripcion_item: '', nro_actividades: 0 }])
-    setSelectedDepartment('')
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -1267,11 +1258,10 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     if (!success) return
 
     setFormData({ title: '', description: '', category: '' })
-    setSelectedDepartment('')
   }
 
   // Puerta de Acceso: Login de Emisor por Departamento y PIN
-  if (authSession === null) {
+  if (authSession === null || !selectedDepartment) {
     return (
       <EmisorLogin
         onSuccess={(deptId, deptName) => {
@@ -1462,19 +1452,11 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-4 pt-6 border-t border-border">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setSelectedDepartment('')}
-                  className="flex-1"
-                >
-                  Cambiar Departamento
-                </Button>
+              <div className="pt-6 border-t border-border">
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 bg-secondary text-white hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full bg-secondary text-white hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isSubmitting ? (
                     <>
@@ -1596,19 +1578,11 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-4 pt-6 border-t border-border">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setSelectedDepartment('')}
-                  className="flex-1"
-                >
-                  Cambiar Departamento
-                </Button>
+              <div className="pt-6 border-t border-border">
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 bg-secondary text-white hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full bg-secondary text-white hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isSubmitting ? (
                     <>
@@ -1867,19 +1841,11 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
               )}
 
               {/* Action Buttons */}
-              <div className="flex gap-4 pt-6 border-t border-border mt-6">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setSelectedDepartment('')}
-                  className="flex-1"
-                >
-                  Cambiar Departamento
-                </Button>
+              <div className="pt-6 border-t border-border mt-6">
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 bg-secondary text-white hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full bg-secondary text-white hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isSubmitting ? (
                     <>
@@ -2027,19 +1993,11 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                 )}
 
                 {/* Action Buttons */}
-                <div className="flex gap-4 pt-6 border-t border-border mt-6">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setSelectedDepartment('')}
-                    className="flex-1"
-                  >
-                    Cambiar Departamento
-                  </Button>
+                <div className="pt-6 border-t border-border mt-6">
                   <Button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 bg-secondary text-white hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full bg-secondary text-white hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {isSubmitting ? (
                       <>
@@ -2220,19 +2178,11 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                 )}
 
                 {/* Action Buttons */}
-                <div className="flex gap-4 pt-6 border-t border-border mt-6">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setSelectedDepartment('')}
-                    className="flex-1"
-                  >
-                    Cambiar Departamento
-                  </Button>
+                <div className="pt-6 border-t border-border mt-6">
                   <Button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 bg-secondary text-white hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full bg-secondary text-white hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {isSubmitting ? (
                       <>
@@ -2707,19 +2657,11 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                 )}
 
                 {/* Action Buttons */}
-                <div className="flex gap-4 pt-6 border-t border-border mt-6">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setSelectedDepartment('')}
-                    className="flex-1"
-                  >
-                    Cambiar Departamento
-                  </Button>
+                <div className="pt-6 border-t border-border mt-6">
                   <Button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 bg-secondary text-white hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full bg-secondary text-white hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {isSubmitting ? (
                       <>
@@ -2980,19 +2922,11 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                 )}
 
                 {/* Action Buttons */}
-                <div className="flex gap-4 pt-6 border-t border-border mt-6">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setSelectedDepartment('')}
-                    className="flex-1"
-                  >
-                    Cambiar Departamento
-                  </Button>
+                <div className="pt-6 border-t border-border mt-6">
                   <Button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 bg-secondary text-white hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full bg-secondary text-white hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {isSubmitting ? (
                       <>
@@ -3121,19 +3055,11 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                 )}
 
                 {/* Action Buttons */}
-                <div className="flex gap-4 pt-6 border-t border-border mt-6">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setSelectedDepartment('')}
-                    className="flex-1"
-                  >
-                    Cambiar Departamento
-                  </Button>
+                <div className="pt-6 border-t border-border mt-6">
                   <Button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 bg-secondary text-white hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full bg-secondary text-white hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {isSubmitting ? (
                       <>
@@ -3381,19 +3307,11 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
                 )}
 
                 {/* Action Buttons */}
-                <div className="flex gap-4 pt-6 border-t border-border mt-6">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setSelectedDepartment('')}
-                    className="flex-1"
-                  >
-                    Cambiar Departamento
-                  </Button>
+                <div className="pt-6 border-t border-border mt-6">
                   <Button
                     type="submit"
                     disabled={isSubmitting}
-                    className="flex-1 bg-secondary text-white hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full bg-secondary text-white hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {isSubmitting ? (
                       <>
@@ -3463,19 +3381,11 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
               </div>
 
               {/* Submit Buttons */}
-              <div className="flex gap-4 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setSelectedDepartment('')}
-                  className="flex-1"
-                >
-                  Cambiar Departamento
-                </Button>
+              <div className="pt-4 border-t border-border">
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 bg-secondary text-white hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full bg-secondary text-white hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isSubmitting ? (
                     <>
