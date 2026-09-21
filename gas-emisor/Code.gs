@@ -197,8 +197,10 @@ function doPost(e) {
       responseData = limpiarStagingSheet(payload.spreadsheetId);
     } else if (payload && payload.action === 'eliminarReporteStaging') {
       responseData = eliminarReporteStaging(payload.id_transaccion, payload.spreadsheetId);
-    } else {
+    } else if (payload && (!payload.action || payload.action === 'guardarReporte')) {
       responseData = guardarReporteEnStaging(payload);
+    } else {
+      responseData = { status: "error", message: "Acción no reconocida: " + (payload && payload.action) };
     }
   } catch (err) {
     responseData = { status: "error", message: "Error: " + err.toString() };
