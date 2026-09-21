@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
-import { LogOut } from 'lucide-react'
+import { LogOut, KeyRound } from 'lucide-react'
 import EmisorLogin from '@/components/emisor-login'
+import EmisorChangePinModal from '@/components/emisor-change-pin-modal'
 
 interface EmisorScreenProps {
   onBack: () => void
@@ -145,6 +146,7 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
   }
 
   const [selectedDepartment, setSelectedDepartment] = useState('')
+  const [isChangePinOpen, setIsChangePinOpen] = useState(false)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -1287,6 +1289,16 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
   return (
     <div className="min-h-screen bg-background">
       <div className="fixed top-4 right-4 z-40 flex items-center gap-2">
+        <Button
+          onClick={() => setIsChangePinOpen(true)}
+          variant="outline"
+          title="Cambiar PIN del departamento"
+          className="bg-card hover:bg-muted text-foreground border border-border shadow-md text-xs flex items-center gap-1.5"
+        >
+          <KeyRound className="w-3.5 h-3.5 text-secondary" />
+          Cambiar PIN
+        </Button>
+
         <Button
           onClick={handleLogout}
           variant="outline"
@@ -3401,6 +3413,12 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
           )}
         </div>
       </main>
+
+      <EmisorChangePinModal
+        isOpen={isChangePinOpen}
+        onClose={() => setIsChangePinOpen(false)}
+        departamento={selectedDepartment}
+      />
     </div>
   )
 }

@@ -442,6 +442,75 @@ function validarPinEmisor(departamento, pinIngresado, spreadsheetId) {
 }
 
 /**
+ * EMISOR: Cambia el PIN de acceso de un departamento en la pestaña Usuarios
+ */
+function cambiarPinEmisor(departamento, pinActual, pinNuevo, spreadsheetId) {
+  try {
+    if (!departamento) {
+      return { status: "error", message: "Debe especificar el departamento." };
+    }
+    var nuevoStr = String(pinNuevo || "").trim();
+    if (!/^\d{6}$/.test(nuevoStr)) {
+      return { status: "error", message: "El nuevo PIN debe contener exactamente 6 dígitos numéricos." };
+    }
+
+    obtenerOInicializarUsuarios(spreadsheetId);
+    var ss = getMacroSpreadsheet(spreadsheetId || DEFAULT_MACRO_SPREADSHEET_ID);
+    var sheet = ss.getSheetByName("Usuarios");
+    if (!sheet) {
+      return { status: "error", message: "No se encontró la pestaña Usuarios en la hoja de cálculo." };
+    }
+
+    var lastRow = sheet.getLastRow();
+    if (lastRow <= 1) {
+      return { status: "error", message: "La pestaña Usuarios no contiene registros." };
+    }
+
+    var data = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
+    var deptBuscado = String(departamento).trim().toLowerCase();
+    var filaEncontrada = -1;
+    var pinAlmacenado = null;
+
+    for (var i = 0; i < data.length; i++) {
+      var d = String(data[i][0] || "").trim().toLowerCase();
+      if (d === deptBuscado || d.indexOf(deptBuscado) !== -1 || deptBuscado.indexOf(d) !== -1) {
+        filaEncontrada = i + 2;
+        pinAlmacenado = String(data[i][1] || "").trim();
+        break;
+      }
+    }
+
+    if (filaEncontrada === -1) {
+      return { status: "error", message: "No se encontró el departamento " + departamento + " en Usuarios." };
+    }
+
+    if (!pinAlmacenado) {
+      pinAlmacenado = "123456";
+    }
+
+    var actualStr = String(pinActual || "").trim();
+    if (actualStr !== pinAlmacenado) {
+      return { status: "error", message: "El PIN actual ingresado es incorrecto." };
+    }
+
+    // Actualizar el PIN en la columna 2
+    var cell = sheet.getRange(filaEncontrada, 2);
+    cell.setNumberFormat('@');
+    cell.setValue(nuevoStr);
+
+    return {
+      status: "success",
+      message: "PIN actualizado exitosamente para " + departamento + "."
+    };
+  } catch (err) {
+    return {
+      status: "error",
+      message: "Error al cambiar PIN de emisor: " + err.toString()
+    };
+  }
+}
+
+/**
  * Endpoint HTTP POST para acciones del Módulo Receptor (Aprobar y Escribir)
  */
 function doPost(e) {
@@ -464,6 +533,8 @@ function doPost(e) {
       responseData = cambiarPinReceptor(payload.pinActual, payload.pinNuevo, payload.spreadsheetId);
     } else if (payload.action === 'validarPinEmisor') {
       responseData = validarPinEmisor(payload.departamento, payload.pin, payload.spreadsheetId);
+    } else if (payload.action === 'cambiarPinEmisor') {
+      responseData = cambiarPinEmisor(payload.departamento, payload.pinActual, payload.pinNuevo, payload.spreadsheetId);
     } else {
       responseData = { status: "error", message: "Acción no reconocida" };
     }
