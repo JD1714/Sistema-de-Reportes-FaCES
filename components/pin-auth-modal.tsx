@@ -176,7 +176,7 @@ export default function PinAuthModal({ onSuccess, onBack, spreadsheetId }: PinAu
 
           <h2 className="text-2xl font-black tracking-tight text-white">Módulo Receptor</h2>
           <p className="text-xs text-slate-400 max-w-xs mx-auto leading-relaxed">
-            Ingrese el PIN de 6 dígitos autorizado para consultar, revisar y consolidar los reportes en el Macro Archivo.
+            Ingrese el PIN de 6 dígitos autorizado para consultar, revisar y consolidar los reportes institucionales.
           </p>
         </div>
 

@@ -59,9 +59,8 @@ export interface StagingReport {
   }
 }
 
-// IDs por defecto de FaCES UCV
+// ID por defecto de la Hoja de Staging FaCES UCV
 const DEFAULT_STAGING_SPREADSHEET_ID = '18-fWk0JZWmB3MeKC6LWL-8qTWqSdAbo_SdA6XNQ2ar4'
-const DEFAULT_MACRO_SPREADSHEET_ID = '1uf9cnqJO4epgGOmrnc9_M91vvFu4D9ju'
 
 export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
   const [reports, setReports] = useState<StagingReport[]>([])
@@ -81,12 +80,10 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
     setIsAuthenticated(false)
   }
 
-  // IDs de las Hojas de Staging y Macro Archivo
+  // ID de la Hoja de Staging
   const [stagingSheetId, setStagingSheetId] = useState<string>(DEFAULT_STAGING_SPREADSHEET_ID)
-  const [macroSheetId, setMacroSheetId] = useState<string>(DEFAULT_MACRO_SPREADSHEET_ID)
   const [showConfigModal, setShowConfigModal] = useState(false)
   const [inputStagingUrl, setInputStagingUrl] = useState('')
-  const [inputMacroUrl, setInputMacroUrl] = useState('')
   const [configSuccessMsg, setConfigSuccessMsg] = useState<string | null>(null)
 
   // Modal de confirmación para borrar Staging
@@ -113,17 +110,13 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
   ]
   const [allowedMonths, setAllowedMonths] = useState<string[]>(ALL_MONTHS)
 
-  // Cargar IDs y Meses guardados al iniciar
+  // Cargar ID de Staging y Meses guardados al iniciar
   useEffect(() => {
     const savedStagingId = localStorage.getItem('FACES_STAGING_SHEET_ID')
-    const savedMacroId = localStorage.getItem('FACES_MACRO_SHEET_ID')
     const savedMonths = localStorage.getItem('FACES_ALLOWED_MONTHS')
 
     if (savedStagingId && savedStagingId.trim() !== '') {
       setStagingSheetId(savedStagingId)
-    }
-    if (savedMacroId && savedMacroId.trim() !== '') {
-      setMacroSheetId(savedMacroId)
     }
     if (savedMonths) {
       try {
@@ -237,10 +230,9 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
     }
   }
 
-  // Manejar vinculación de nuevas hojas por URL
+  // Manejar vinculación de nueva hoja de Staging por URL
   const handleLinkNewSheets = () => {
     let newStaging = stagingSheetId
-    let newMacro = macroSheetId
 
     if (inputStagingUrl.trim()) {
       const matchS = inputStagingUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/)
@@ -250,18 +242,6 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
         localStorage.setItem('FACES_STAGING_SHEET_ID', newStaging)
       } else {
         alert('URL de Hoja de Staging inválida.')
-        return
-      }
-    }
-
-    if (inputMacroUrl.trim()) {
-      const matchM = inputMacroUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/)
-      if (matchM && matchM[1]) {
-        newMacro = matchM[1]
-        setMacroSheetId(newMacro)
-        localStorage.setItem('FACES_MACRO_SHEET_ID', newMacro)
-      } else {
-        alert('URL de Macro Archivo inválida.')
         return
       }
     }
@@ -276,7 +256,6 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
       setConfigSuccessMsg(null)
       setShowConfigModal(false)
       setInputStagingUrl('')
-      setInputMacroUrl('')
     }, 1500)
   }
 
@@ -487,7 +466,7 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
               <div>
                 <h1 className="text-3xl font-extrabold tracking-tight text-white">Módulo Receptor de Reportes</h1>
                 <p className="text-slate-300 text-sm mt-0.5">
-                  Consolidación, revisión y copiado asistido al Macro Archivo FaCES
+                  Consolidación, revisión y copiado asistido de reportes FaCES
                 </p>
               </div>
             </div>
@@ -507,7 +486,7 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
                 className="bg-slate-900/90 hover:bg-slate-800 text-slate-100 border border-slate-700 text-xs font-semibold flex items-center gap-2 shadow-md"
               >
                 <Settings className="w-4 h-4 text-secondary" />
-                ⚙️ Configuración / Hojas
+                ⚙️ Configuración
               </Button>
             </div>
           </div>
@@ -532,17 +511,11 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
 
       {/* Main Content */}
       <main className="mx-auto max-w-6xl px-6 py-8 space-y-6">
-        {/* Banner Informativo de Hojas Vinculadas */}
+        {/* Banner Informativo de Hoja de Staging Vinculada */}
         <div className="bg-slate-900/80 border border-slate-800 p-4 rounded-xl backdrop-blur flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-          <div className="flex flex-col gap-1 text-slate-300">
-            <div className="flex items-center gap-2">
-              <LinkIcon className="w-3.5 h-3.5 text-secondary shrink-0" />
-              <span>Hoja de Staging (Entrada): <strong className="text-white font-mono">{stagingSheetId}</strong></span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FileText className="w-3.5 h-3.5 text-primary shrink-0" />
-              <span>Macro Archivo (Destino): <strong className="text-white font-mono">{macroSheetId}</strong></span>
-            </div>
+          <div className="flex items-center gap-2 text-slate-300">
+            <LinkIcon className="w-3.5 h-3.5 text-secondary shrink-0" />
+            <span>Hoja de Staging (Entrada): <strong className="text-white font-mono">{stagingSheetId}</strong></span>
           </div>
 
           <div className="flex items-center gap-3">
@@ -552,16 +525,7 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
               rel="noreferrer"
               className="text-secondary hover:underline flex items-center gap-1 font-semibold"
             >
-              Staging <ExternalLink className="w-3 h-3" />
-            </a>
-            <span className="text-slate-600">|</span>
-            <a
-              href={`https://docs.google.com/spreadsheets/d/${macroSheetId}/edit`}
-              target="_blank"
-              rel="noreferrer"
-              className="text-primary hover:underline flex items-center gap-1 font-semibold"
-            >
-              Macro Archivo <ExternalLink className="w-3 h-3" />
+              Abrir Hoja de Staging <ExternalLink className="w-3 h-3" />
             </a>
           </div>
         </div>
@@ -796,14 +760,14 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
         </div>
       )}
 
-      {/* Modal de Configuración / Vincular Hojas */}
+      {/* Modal de Configuración / Vincular Hoja de Staging */}
       {showConfigModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in">
           <div className="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden p-6 space-y-5">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2 text-white font-bold text-lg">
                 <Settings className="w-5 h-5 text-secondary" />
-                Vincular Hojas de Cálculo
+                Configuración del Sistema
               </div>
               <button
                 onClick={() => setShowConfigModal(false)}
@@ -814,7 +778,7 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
             </div>
 
             <p className="text-xs text-slate-300 leading-relaxed">
-              Si ha creado o subido nuevos archivos a Google Drive, pegue las URLs a continuación para actualizar la aplicación.
+              Configura la Hoja de Staging vinculada y administra los meses habilitados para que los departamentos emisores puedan reportar.
             </p>
 
             <div className="space-y-4">
@@ -828,19 +792,6 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
                   value={inputStagingUrl}
                   onChange={(e) => setInputStagingUrl(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:border-secondary focus:outline-none"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  URL del Macro Archivo (Destino)
-                </label>
-                <input
-                  type="text"
-                  placeholder={`Actual: ${macroSheetId}`}
-                  value={inputMacroUrl}
-                  onChange={(e) => setInputMacroUrl(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:border-primary focus:outline-none"
                 />
               </div>
 
@@ -1114,7 +1065,7 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
               <div className="space-y-6">
                 <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
                   <Layers className="w-4 h-4 text-secondary" />
-                  Tablas y Secciones de Destino en el Macro Archivo
+                  Tablas y Secciones de Destino (para Pegar en Excel)
                 </h3>
 
                 {editablePayload.registros && editablePayload.registros.length > 0 ? (
