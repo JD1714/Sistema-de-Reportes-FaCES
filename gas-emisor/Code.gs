@@ -182,6 +182,62 @@ function eliminarReporteStaging(idTransaccion, spreadsheetId) {
   }
 }
 
+/**
+ * RECEPTOR: Obtiene o inicializa el PIN de acceso en la pestaña Configuración
+ */
+function obtenerOInicializarPin(spreadsheetId) {
+  try {
+    var ss = getSpreadsheet(spreadsheetId || DEFAULT_STAGING_SPREADSHEET_ID);
+    var sheet = ss.getSheetByName("Configuración");
+    if (!sheet) {
+      sheet = ss.insertSheet("Configuración");
+      sheet.getRange(1, 1, 1, 2).setValues([["Clave", "Valor"]]).setFontWeight("bold");
+      sheet.getRange(2, 1, 1, 2).setValues([["PIN_RECEPTOR", "123456"]]);
+      return "123456";
+    }
+
+    var lastRow = sheet.getLastRow();
+    if (lastRow >= 2) {
+      var data = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
+      for (var i = 0; i < data.length; i++) {
+        if (String(data[i][0]).trim() === "PIN_RECEPTOR") {
+          var stored = String(data[i][1]).trim();
+          return stored || "123456";
+        }
+      }
+    }
+
+    sheet.appendRow(["PIN_RECEPTOR", "123456"]);
+    return "123456";
+  } catch (err) {
+    console.warn("Error al obtener PIN de Configuración:", err);
+    return "123456";
+  }
+}
+
+/**
+ * RECEPTOR: Valida el PIN ingresado contra la pestaña Configuración
+ */
+function validarPinReceptor(pinIngresado, spreadsheetId) {
+  try {
+    var pinAlmacenado = obtenerOInicializarPin(spreadsheetId);
+    var ingresadoStr = String(pinIngresado || "").trim();
+    var valido = (ingresadoStr === pinAlmacenado);
+
+    return {
+      status: "success",
+      valid: valido,
+      message: valido ? "PIN correcto." : "PIN incorrecto."
+    };
+  } catch (err) {
+    return {
+      status: "error",
+      valid: false,
+      message: "Error al validar PIN: " + err.toString()
+    };
+  }
+}
+
 function doPost(e) {
   var responseData;
   try {
@@ -197,6 +253,8 @@ function doPost(e) {
       responseData = limpiarStagingSheet(payload.spreadsheetId);
     } else if (payload && payload.action === 'eliminarReporteStaging') {
       responseData = eliminarReporteStaging(payload.id_transaccion, payload.spreadsheetId);
+    } else if (payload && payload.action === 'validarPin') {
+      responseData = validarPinReceptor(payload.pin, payload.spreadsheetId);
     } else if (payload && (!payload.action || payload.action === 'guardarReporte')) {
       responseData = guardarReporteEnStaging(payload);
     } else {

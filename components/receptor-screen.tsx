@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
+import PinAuthModal from '@/components/pin-auth-modal'
 import {
   RefreshCw,
   Search,
@@ -27,7 +28,8 @@ import {
   Info,
   Trash2,
   Type,
-  Hash
+  Hash,
+  Lock
 } from 'lucide-react'
 
 interface ReceptorScreenProps {
@@ -66,6 +68,19 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   
+  // Estado de Autenticación por PIN (protege acceso a receptores)
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    const isAuth = sessionStorage.getItem('FACES_RECEPTOR_AUTH') === 'true'
+    setIsAuthenticated(isAuth)
+  }, [])
+
+  const handleLockSession = () => {
+    sessionStorage.removeItem('FACES_RECEPTOR_AUTH')
+    setIsAuthenticated(false)
+  }
+
   // IDs de las Hojas de Staging y Macro Archivo
   const [stagingSheetId, setStagingSheetId] = useState<string>(DEFAULT_STAGING_SPREADSHEET_ID)
   const [macroSheetId, setMacroSheetId] = useState<string>(DEFAULT_MACRO_SPREADSHEET_ID)
@@ -413,14 +428,45 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
   const isControlDeEstudios = editablePayload?.departamento_emisor?.toLowerCase().includes('control de estudios')
   const isEnero = editablePayload?.mes_reportado?.toLowerCase().includes('enero')
 
+  // Puerta de Acceso con PIN de 6 dígitos
+  if (isAuthenticated === false) {
+    return (
+      <PinAuthModal
+        onSuccess={() => setIsAuthenticated(true)}
+        onBack={onBack}
+        spreadsheetId={stagingSheetId}
+      />
+    )
+  }
+
+  // Espera breve de verificación de sesión
+  if (isAuthenticated === null) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center space-y-3">
+        <RefreshCw className="w-8 h-8 animate-spin text-secondary" />
+        <p className="text-xs text-slate-400">Verificando autorización...</p>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
-      {/* Botón Volver */}
-      <div className="fixed top-4 right-4 z-40">
+      {/* Botones Flotantes Superiores */}
+      <div className="fixed top-4 right-4 z-40 flex items-center gap-2">
+        <Button
+          onClick={handleLockSession}
+          variant="outline"
+          title="Bloquear sesión"
+          className="bg-slate-900/80 backdrop-blur hover:bg-slate-800 text-rose-300 hover:text-rose-200 border border-slate-700 shadow-lg text-xs flex items-center gap-1.5"
+        >
+          <Lock className="w-3.5 h-3.5 text-rose-400" />
+          Bloquear
+        </Button>
+
         <Button
           onClick={onBack}
           variant="outline"
-          className="bg-slate-900/80 backdrop-blur hover:bg-slate-800 text-slate-100 border border-slate-700 shadow-lg"
+          className="bg-slate-900/80 backdrop-blur hover:bg-slate-800 text-slate-100 border border-slate-700 shadow-lg text-xs"
         >
           ← Volver al Hub
         </Button>
