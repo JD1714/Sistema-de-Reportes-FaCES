@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
+import { LogOut } from 'lucide-react'
+import EmisorLogin from '@/components/emisor-login'
 
 interface EmisorScreenProps {
   onBack: () => void
@@ -113,6 +115,34 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     window.addEventListener('storage', loadAllowedMonths)
     return () => window.removeEventListener('storage', loadAllowedMonths)
   }, [])
+
+  // Sesión de autenticación por departamento
+  const [authSession, setAuthSession] = useState<{
+    departamentoId: string
+    departamentoNombre: string
+    authenticated: boolean
+  } | null | undefined>(undefined)
+
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem('FACES_EMISOR_AUTH')
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        if (parsed && parsed.authenticated && parsed.departamentoNombre) {
+          setAuthSession(parsed)
+          setSelectedDepartment(parsed.departamentoNombre)
+          return
+        }
+      }
+    } catch (e) {}
+    setAuthSession(null)
+  }, [])
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('FACES_EMISOR_AUTH')
+    setAuthSession(null)
+    setSelectedDepartment('')
+  }
 
   const [selectedDepartment, setSelectedDepartment] = useState('')
   const [formData, setFormData] = useState({
@@ -1240,60 +1270,25 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
     setSelectedDepartment('')
   }
 
-  // Department Selection Screen
-  if (!selectedDepartment) {
+  // Puerta de Acceso: Login de Emisor por Departamento y PIN
+  if (authSession === null) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="fixed top-4 right-4 z-40">
-          <Button
-            onClick={onBack}
-            variant="outline"
-            className="bg-card hover:bg-muted text-foreground border border-border shadow-md"
-          >
-            ← Volver
-          </Button>
-        </div>
+      <EmisorLogin
+        onSuccess={(deptId, deptName) => {
+          const session = { departamentoId: deptId, departamentoNombre: deptName, authenticated: true }
+          setAuthSession(session)
+          setSelectedDepartment(deptName)
+        }}
+        onBack={onBack}
+      />
+    )
+  }
 
-        {/* Header */}
-        <header className="bg-gradient-to-r from-primary to-secondary text-white p-6">
-          <div className="mx-auto max-w-6xl px-6 py-6 flex items-center gap-4">
-            <Image
-              src="/faces_logo_dark.png"
-              alt="FaCES UCV"
-              width={56}
-              height={56}
-              className="w-14 h-14 object-contain"
-            />
-            <h1 className="text-3xl font-bold">Sistema de Reportes FaCES</h1>
-          </div>
-        </header>
-
-        {/* Department Selection */}
-        <main className="mx-auto max-w-6xl px-6 py-12">
-          <div className="bg-card border border-border rounded-lg p-8 shadow-sm">
-            <h2 className="text-2xl font-bold mb-2 text-foreground">Seleccione su Departamento</h2>
-            <p className="text-muted-foreground mb-8">
-              Elija el departamento desde el cual desea enviar el reporte
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {DEPARTMENTS.map((dept) => (
-                <button
-                  key={dept.id}
-                  onClick={() => setSelectedDepartment(dept.name)}
-                  className="p-6 rounded-lg border-2 border-border hover:border-secondary bg-card hover:bg-muted transition-all text-left group"
-                >
-                  <span className="text-4xl mb-3 block group-hover:scale-110 transition-transform">
-                    {dept.icon}
-                  </span>
-                  <span className="font-semibold text-foreground group-hover:text-primary transition-colors">
-                    {dept.name}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </main>
+  if (authSession === undefined) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center space-y-3">
+        <div className="w-8 h-8 border-2 border-secondary border-t-transparent rounded-full animate-spin" />
+        <p className="text-xs text-slate-400">Verificando sesión...</p>
       </div>
     )
   }
@@ -1301,13 +1296,23 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
   // Report Form Screen
   return (
     <div className="min-h-screen bg-background">
-      <div className="fixed top-4 right-4 z-40">
+      <div className="fixed top-4 right-4 z-40 flex items-center gap-2">
+        <Button
+          onClick={handleLogout}
+          variant="outline"
+          title="Cerrar sesión del departamento"
+          className="bg-card hover:bg-muted text-rose-400 hover:text-rose-300 border border-border shadow-md text-xs flex items-center gap-1.5"
+        >
+          <LogOut className="w-3.5 h-3.5" />
+          Cerrar Sesión
+        </Button>
+
         <Button
           onClick={onBack}
           variant="outline"
-          className="bg-card hover:bg-muted text-foreground border border-border shadow-md"
+          className="bg-card hover:bg-muted text-foreground border border-border shadow-md text-xs"
         >
-          ← Volver
+          ← Volver al Hub
         </Button>
       </div>
 

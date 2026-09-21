@@ -124,7 +124,7 @@ export default function PinAuthModal({ onSuccess, onBack, spreadsheetId }: PinAu
           onSuccess()
         }, 600)
       } else {
-        setErrorMessage('El PIN ingresado es incorrecto. Verifique con el Decanato.')
+        setErrorMessage('El PIN ingresado es incorrecto. Verifique con la Administración.')
         setPinDigits(['', '', '', '', '', ''])
         setTimeout(() => {
           inputRefs.current[0]?.focus()

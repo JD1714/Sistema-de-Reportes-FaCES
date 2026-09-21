@@ -357,6 +357,90 @@ function cambiarPinReceptor(pinActual, pinNuevo, spreadsheetId) {
   }
 }
 
+// Departamentos emisores oficiales de FaCES UCV
+var DEPARTAMENTOS_OFICIALES = [
+  "Control de Estudios - Pregrado",
+  "Control de Estudios - Postgrado",
+  "Servicio Comunitario",
+  "Biblioteca",
+  "Desarrollo Estudiantil",
+  "Coordinación de Extensión",
+  "Departamento de Compras",
+  "Centro de Extensión Profesional",
+  "Instituto de Investigaciones"
+];
+
+/**
+ * EMISOR: Obtiene o inicializa la pestaña Usuarios con los 9 departamentos y PIN 123456
+ */
+function obtenerOInicializarUsuarios(spreadsheetId) {
+  try {
+    var ss = getMacroSpreadsheet(spreadsheetId || DEFAULT_MACRO_SPREADSHEET_ID);
+    var sheet = ss.getSheetByName("Usuarios");
+    if (!sheet) {
+      sheet = ss.insertSheet("Usuarios");
+      sheet.getRange(1, 1, 1, 2).setValues([["Departamento", "PIN"]]).setFontWeight("bold");
+      var defaultRows = DEPARTAMENTOS_OFICIALES.map(function(dept) {
+        return [dept, "123456"];
+      });
+      sheet.getRange(2, 1, defaultRows.length, 2).setValues(defaultRows);
+      sheet.setFrozenRows(1);
+    }
+    return sheet;
+  } catch (err) {
+    console.warn("Error al inicializar Usuarios:", err);
+    return null;
+  }
+}
+
+/**
+ * EMISOR: Valida el PIN de un departamento contra la pestaña Usuarios
+ */
+function validarPinEmisor(departamento, pinIngresado, spreadsheetId) {
+  try {
+    if (!departamento) {
+      return { status: "error", valid: false, message: "Debe especificar el departamento." };
+    }
+
+    obtenerOInicializarUsuarios(spreadsheetId);
+    var ss = getMacroSpreadsheet(spreadsheetId || DEFAULT_MACRO_SPREADSHEET_ID);
+    var sheet = ss.getSheetByName("Usuarios");
+    if (!sheet || sheet.getLastRow() <= 1) {
+      var esValido = String(pinIngresado || "").trim() === "123456";
+      return { status: "success", valid: esValido, message: esValido ? "Acceso autorizado." : "PIN incorrecto." };
+    }
+
+    var data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 2).getValues();
+    var deptBuscado = String(departamento).trim().toLowerCase();
+    var pinAlmacenado = null;
+
+    for (var i = 0; i < data.length; i++) {
+      var d = String(data[i][0] || "").trim().toLowerCase();
+      if (d === deptBuscado || d.indexOf(deptBuscado) !== -1 || deptBuscado.indexOf(d) !== -1) {
+        pinAlmacenado = String(data[i][1] || "").trim();
+        break;
+      }
+    }
+
+    if (!pinAlmacenado) {
+      pinAlmacenado = "123456";
+    }
+
+    var valido = (String(pinIngresado || "").trim() === pinAlmacenado);
+    return {
+      status: "success",
+      valid: valido,
+      message: valido ? "Acceso autorizado." : "PIN incorrecto para " + departamento + "."
+    };
+  } catch (err) {
+    return {
+      status: "error",
+      valid: false,
+      message: "Error al validar PIN del emisor: " + err.toString()
+    };
+  }
+}
+
 /**
  * Endpoint HTTP POST para acciones del Módulo Receptor (Aprobar y Escribir)
  */
@@ -378,6 +462,8 @@ function doPost(e) {
       responseData = validarPinReceptor(payload.pin, payload.spreadsheetId);
     } else if (payload.action === 'cambiarPin') {
       responseData = cambiarPinReceptor(payload.pinActual, payload.pinNuevo, payload.spreadsheetId);
+    } else if (payload.action === 'validarPinEmisor') {
+      responseData = validarPinEmisor(payload.departamento, payload.pin, payload.spreadsheetId);
     } else {
       responseData = { status: "error", message: "Acción no reconocida" };
     }
