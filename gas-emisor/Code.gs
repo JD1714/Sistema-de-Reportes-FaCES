@@ -238,6 +238,65 @@ function validarPinReceptor(pinIngresado, spreadsheetId) {
   }
 }
 
+/**
+ * RECEPTOR: Cambia el PIN de acceso verificando el PIN actual
+ */
+function cambiarPinReceptor(pinActual, pinNuevo, spreadsheetId) {
+  try {
+    var pinAlmacenado = obtenerOInicializarPin(spreadsheetId);
+    var actualLimpio = String(pinActual || "").trim();
+    if (actualLimpio !== pinAlmacenado) {
+      return {
+        status: "error",
+        message: "El PIN actual ingresado no es correcto."
+      };
+    }
+
+    var nuevoLimpio = String(pinNuevo || "").trim();
+    if (!nuevoLimpio || nuevoLimpio.length !== 6 || !/^\d{6}$/.test(nuevoLimpio)) {
+      return {
+        status: "error",
+        message: "El nuevo PIN debe contener exactamente 6 dígitos numéricos."
+      };
+    }
+
+    var ss = getSpreadsheet(spreadsheetId || DEFAULT_STAGING_SPREADSHEET_ID);
+    var sheet = ss.getSheetByName("Configuración");
+    if (!sheet) {
+      obtenerOInicializarPin(spreadsheetId);
+      sheet = ss.getSheetByName("Configuración");
+    }
+
+    var lastRow = sheet.getLastRow();
+    var actualizado = false;
+
+    if (lastRow >= 2) {
+      var data = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
+      for (var i = 0; i < data.length; i++) {
+        if (String(data[i][0]).trim() === "PIN_RECEPTOR") {
+          sheet.getRange(i + 2, 2).setValue(nuevoLimpio);
+          actualizado = true;
+          break;
+        }
+      }
+    }
+
+    if (!actualizado) {
+      sheet.appendRow(["PIN_RECEPTOR", nuevoLimpio]);
+    }
+
+    return {
+      status: "success",
+      message: "¡PIN de seguridad actualizado exitosamente!"
+    };
+  } catch (err) {
+    return {
+      status: "error",
+      message: "Error al cambiar PIN en la hoja: " + err.toString()
+    };
+  }
+}
+
 function doPost(e) {
   var responseData;
   try {
@@ -255,6 +314,8 @@ function doPost(e) {
       responseData = eliminarReporteStaging(payload.id_transaccion, payload.spreadsheetId);
     } else if (payload && payload.action === 'validarPin') {
       responseData = validarPinReceptor(payload.pin, payload.spreadsheetId);
+    } else if (payload && payload.action === 'cambiarPin') {
+      responseData = cambiarPinReceptor(payload.pinActual, payload.pinNuevo, payload.spreadsheetId);
     } else if (payload && (!payload.action || payload.action === 'guardarReporte')) {
       responseData = guardarReporteEnStaging(payload);
     } else {
