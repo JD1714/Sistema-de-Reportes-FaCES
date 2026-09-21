@@ -77,6 +77,8 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
   // Modal de confirmación para borrar Staging
   const [showClearStagingConfirm, setShowClearStagingConfirm] = useState(false)
   const [isClearingStaging, setIsClearingStaging] = useState(false)
+  const [reportToDelete, setReportToDelete] = useState<StagingReport | null>(null)
+  const [isDeletingSingleReport, setIsDeletingSingleReport] = useState(false)
 
   // Filtros
   const [searchTerm, setSearchTerm] = useState('')
@@ -179,6 +181,44 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
       alert('Error de conexión al intentar limpiar Staging.')
     } finally {
       setIsClearingStaging(false)
+    }
+  }
+
+  // Borrar un solo reporte de la Zona de Staging
+  const handleDeleteSingleReport = async () => {
+    if (!reportToDelete) return
+    setIsDeletingSingleReport(true)
+    try {
+      const activeStagingId = stagingSheetId || DEFAULT_STAGING_SPREADSHEET_ID
+      const res = await fetch('/api/staging', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'eliminarReporteStaging',
+          id_transaccion: reportToDelete.id_transaccion,
+          spreadsheetId: activeStagingId
+        })
+      })
+
+      const data = await res.json()
+
+      if (data.status === 'success') {
+        const deletedId = reportToDelete.id_transaccion
+        setReports((prev) => prev.filter((r) => r.id_transaccion !== deletedId))
+        setReportToDelete(null)
+        setFeedbackModal({
+          title: '🗑️ Reporte Eliminado',
+          message: `El reporte ${deletedId} ha sido eliminado exitosamente de la Zona de Staging.`,
+          type: 'success'
+        })
+      } else {
+        alert(data.message || 'No se pudo eliminar el reporte de la Zona de Staging.')
+      }
+    } catch (err: any) {
+      console.error('Error al eliminar reporte:', err)
+      alert('Error de conexión al intentar eliminar el reporte.')
+    } finally {
+      setIsDeletingSingleReport(false)
     }
   }
 
@@ -608,6 +648,14 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
                       Revisar y Copiar Datos
                       <ChevronRight className="w-4 h-4" />
                     </Button>
+                    <Button
+                      onClick={() => setReportToDelete(report)}
+                      variant="outline"
+                      title="Eliminar este reporte"
+                      className="bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 hover:text-white border border-rose-800/80 hover:border-rose-700 p-2.5 rounded-lg transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4 text-rose-400" />
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -616,7 +664,7 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
         )}
       </main>
 
-      {/* Modal de Confirmación para Limpiar Staging */}
+      {/* Modal de Confirmación para Limpiar Staging Completo */}
       {showClearStagingConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in">
           <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-4 text-center">
@@ -651,6 +699,49 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
                   <>
                     <Trash2 className="w-3.5 h-3.5" />
                     Sí, Limpiar Todo Staging
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmación para Borrar Reporte Individual */}
+      {reportToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-4 text-center">
+            <div className="w-12 h-12 rounded-full mx-auto bg-rose-950 border border-rose-700 text-rose-400 flex items-center justify-center">
+              <Trash2 className="w-6 h-6" />
+            </div>
+
+            <h3 className="text-lg font-bold text-white">¿Eliminar este reporte?</h3>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              ¿Estás seguro de que deseas eliminar el reporte <strong className="font-mono text-amber-300">{reportToDelete.id_transaccion}</strong> de <strong>{reportToDelete.departamento_emisor}</strong> de la Zona de Staging?
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+              <Button
+                variant="outline"
+                onClick={() => setReportToDelete(null)}
+                className="border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleDeleteSingleReport}
+                disabled={isDeletingSingleReport}
+                className="bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs flex items-center gap-1.5"
+              >
+                {isDeletingSingleReport ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    Eliminando...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Sí, Eliminar
                   </>
                 )}
               </Button>

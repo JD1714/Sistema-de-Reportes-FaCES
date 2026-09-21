@@ -142,6 +142,46 @@ function limpiarStagingSheet(spreadsheetId) {
   }
 }
 
+/**
+ * RECEPTOR: Borra un reporte específico de la Zona de Staging por su ID_Transaccion
+ */
+function eliminarReporteStaging(idTransaccion, spreadsheetId) {
+  try {
+    if (!idTransaccion) {
+      throw new Error("ID de transacción no especificado.");
+    }
+
+    var ss = getSpreadsheet(spreadsheetId || DEFAULT_STAGING_SPREADSHEET_ID);
+    var sheet = ss.getSheetByName(STAGING_SHEET_NAME);
+    if (!sheet || sheet.getLastRow() <= 1) {
+      throw new Error("No se encontró la pestaña Zona de Staging o está vacía.");
+    }
+
+    var data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues();
+    var encontrado = false;
+
+    for (var i = 0; i < data.length; i++) {
+      if (String(data[i][0]).trim() === String(idTransaccion).trim()) {
+        sheet.deleteRow(i + 2);
+        encontrado = true;
+        break;
+      }
+    }
+
+    if (!encontrado) {
+      return { status: "error", message: "Transacción no encontrada en Staging: " + idTransaccion };
+    }
+
+    return {
+      status: "success",
+      id_transaccion: idTransaccion,
+      message: "Reporte " + idTransaccion + " eliminado exitosamente de la Zona de Staging."
+    };
+  } catch (err) {
+    return { status: "error", message: "Error al eliminar de Staging: " + err.toString() };
+  }
+}
+
 function doPost(e) {
   var responseData;
   try {
@@ -155,6 +195,8 @@ function doPost(e) {
       responseData = aprobarReporteEnStaging(payload);
     } else if (payload && payload.action === 'limpiarStaging') {
       responseData = limpiarStagingSheet(payload.spreadsheetId);
+    } else if (payload && payload.action === 'eliminarReporteStaging') {
+      responseData = eliminarReporteStaging(payload.id_transaccion, payload.spreadsheetId);
     } else {
       responseData = guardarReporteEnStaging(payload);
     }
