@@ -5,6 +5,13 @@ import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import PinAuthModal from '@/components/pin-auth-modal'
 import {
+  getStagingReports,
+  clearStaging,
+  deleteStagingReport,
+  changeReceptorPin,
+  approveStagingReport
+} from '@/lib/api-client'
+import {
   RefreshCw,
   Search,
   CheckCircle,
@@ -141,8 +148,7 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
     setErrorMsg(null)
     try {
       const activeStagingId = stagingSheetId || DEFAULT_STAGING_SPREADSHEET_ID
-      const res = await fetch(`/api/staging?spreadsheetId=${activeStagingId}`, { cache: 'no-store' })
-      const data = await res.json()
+      const data = await getStagingReports(activeStagingId)
 
       if (data.status === 'success' && Array.isArray(data.reportes)) {
         setReports(data.reportes)
@@ -169,18 +175,9 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
     setIsClearingStaging(true)
     try {
       const activeStagingId = stagingSheetId || DEFAULT_STAGING_SPREADSHEET_ID
-      const res = await fetch('/api/staging', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'limpiarStaging',
-          spreadsheetId: activeStagingId
-        })
-      })
+      const data = await clearStaging(activeStagingId)
 
-      const data = await res.json()
-
-      if (data.status === 'success') {
+      if (data.success) {
         setReports([])
         setShowClearStagingConfirm(false)
         setFeedbackModal({
@@ -205,19 +202,9 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
     setIsDeletingSingleReport(true)
     try {
       const activeStagingId = stagingSheetId || DEFAULT_STAGING_SPREADSHEET_ID
-      const res = await fetch('/api/staging', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'eliminarReporteStaging',
-          id_transaccion: reportToDelete.id_transaccion,
-          spreadsheetId: activeStagingId
-        })
-      })
+      const data = await deleteStagingReport(reportToDelete.id_transaccion, activeStagingId)
 
-      const data = await res.json()
-
-      if (data.status === 'success') {
+      if (data.success) {
         const deletedId = reportToDelete.id_transaccion
         setReports((prev) => prev.filter((r) => r.id_transaccion !== deletedId))
         setReportToDelete(null)
@@ -301,17 +288,8 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
     setIsUpdatingPin(true)
     try {
       const activeStagingId = stagingSheetId || DEFAULT_STAGING_SPREADSHEET_ID
-      const res = await fetch('/api/auth/pin', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          pinActual: pinActual.trim(),
-          pinNuevo: pinNuevo.trim(),
-          spreadsheetId: activeStagingId
-        })
-      })
+      const data = await changeReceptorPin(pinActual, pinNuevo, activeStagingId)
 
-      const data = await res.json()
       if (data.success) {
         setPinChangeMsg({ text: data.message || '¡PIN actualizado exitosamente!', type: 'success' })
         setPinActual('')
@@ -399,20 +377,9 @@ export default function ReceptorScreen({ onBack }: ReceptorScreenProps) {
 
     try {
       const activeStagingId = stagingSheetId || DEFAULT_STAGING_SPREADSHEET_ID
-      const res = await fetch('/api/staging', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'aprobarReporte',
-          id_transaccion: selectedReport.id_transaccion,
-          payload: editablePayload,
-          spreadsheetId: activeStagingId
-        })
-      })
+      const data = await approveStagingReport(selectedReport.id_transaccion, activeStagingId)
 
-      const data = await res.json()
-
-      if (data.status === 'success') {
+      if (data.success) {
         const updatedReports = reports.map((r) =>
           r.id_transaccion === selectedReport.id_transaccion
             ? { ...r, estado: 'Aprobado' as const, payload: editablePayload }

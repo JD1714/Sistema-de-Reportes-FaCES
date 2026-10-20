@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
+import { validateReceptorPin } from '@/lib/api-client'
 import { Lock, ArrowLeft, ShieldAlert, CheckCircle2, Loader2, KeyRound } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -106,16 +107,7 @@ export default function PinAuthModal({ onSuccess, onBack, spreadsheetId }: PinAu
     setErrorMessage(null)
 
     try {
-      const res = await fetch('/api/auth/pin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          pin: pinToVerify,
-          spreadsheetId: spreadsheetId,
-        }),
-      })
-
-      const data = await res.json()
+      const data = await validateReceptorPin(pinToVerify, spreadsheetId)
 
       if (data.valid) {
         setIsSuccess(true)
@@ -124,7 +116,7 @@ export default function PinAuthModal({ onSuccess, onBack, spreadsheetId }: PinAu
           onSuccess()
         }, 600)
       } else {
-        setErrorMessage('El PIN ingresado es incorrecto. Verifique con la Administración.')
+        setErrorMessage(data.message || 'El PIN ingresado es incorrecto. Verifique con la Administración.')
         setPinDigits(['', '', '', '', '', ''])
         setTimeout(() => {
           inputRefs.current[0]?.focus()

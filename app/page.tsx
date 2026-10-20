@@ -1,7 +1,21 @@
+'use client'
+
+import { useState } from 'react'
 import Image from 'next/image'
-import Link from 'next/link'
+import EmisorScreen from '@/components/emisor-screen'
+import ReceptorScreen from '@/components/receptor-screen'
 
 export default function Home() {
+  const [currentView, setCurrentView] = useState<'hub' | 'emisor' | 'receptor'>('hub')
+
+  if (currentView === 'emisor') {
+    return <EmisorScreen onBack={() => setCurrentView('hub')} />
+  }
+
+  if (currentView === 'receptor') {
+    return <ReceptorScreen onBack={() => setCurrentView('hub')} />
+  }
+
   return (
     <div className="relative min-h-screen bg-muted px-6 py-12 overflow-hidden flex flex-col items-center justify-center">
       {/* Logo top left */}
@@ -45,12 +59,12 @@ export default function Home() {
                 Permite a los departamentos autorizados registrar y enviar métricas de gestión mensual directo a la Zona de Staging.
               </p>
             </div>
-            <Link
-              href="/emisor"
+            <button
+              onClick={() => setCurrentView('emisor')}
               className="mt-auto inline-flex justify-center items-center px-4 py-3 rounded-lg bg-secondary hover:bg-secondary/90 text-white font-semibold text-sm transition-all cursor-pointer shadow-sm hover:shadow"
             >
               Acceder como Emisor
-            </Link>
+            </button>
           </div>
 
           {/* Receptor Portal Card */}
@@ -66,12 +80,12 @@ export default function Home() {
                 Área reservada para coordinadores. Permite auditar, aprobar o rechazar los reportes de la Zona de Staging antes de su consolidación en producción.
               </p>
             </div>
-            <Link
-              href="/receptor"
+            <button
+              onClick={() => setCurrentView('receptor')}
               className="mt-auto inline-flex justify-center items-center px-4 py-3 rounded-lg bg-primary hover:bg-primary/90 text-white font-semibold text-sm transition-all cursor-pointer shadow-sm hover:shadow"
             >
               Acceder como Revisor
-            </Link>
+            </button>
           </div>
         </div>
 

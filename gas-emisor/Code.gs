@@ -297,6 +297,38 @@ function cambiarPinReceptor(pinActual, pinNuevo, spreadsheetId) {
   }
 }
 
+/**
+ * RECEPTOR: Obtiene la lista de reportes en la Zona de Staging
+ */
+function obtenerReportesStaging(spreadsheetId) {
+  try {
+    var ss = getSpreadsheet(spreadsheetId || DEFAULT_STAGING_SPREADSHEET_ID);
+    var sheet = ss.getSheetByName(STAGING_SHEET_NAME);
+    if (!sheet || sheet.getLastRow() <= 1) {
+      return { status: "success", reportes: [] };
+    }
+
+    var data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 5).getValues();
+    var reportes = data.map(function(row) {
+      var payload = {};
+      try { payload = JSON.parse(row[4]); } catch (err) { payload = { raw: row[4] }; }
+      return {
+        id_transaccion: row[0],
+        fecha_emision: row[1],
+        departamento_emisor: row[2],
+        estado: row[3],
+        payload: payload
+      };
+    }).filter(function(r) {
+      return r.id_transaccion && String(r.id_transaccion).indexOf("REQ-") === 0;
+    }).reverse();
+
+    return { status: "success", reportes: reportes };
+  } catch (err) {
+    return { status: "error", message: "Error al leer Staging: " + err.toString() };
+  }
+}
+
 function doPost(e) {
   var responseData;
   try {
@@ -308,6 +340,8 @@ function doPost(e) {
 
     if (payload && payload.action === 'aprobarReporte') {
       responseData = aprobarReporteEnStaging(payload);
+    } else if (payload && (payload.action === 'obtenerReportes' || payload.action === 'leerStaging')) {
+      responseData = obtenerReportesStaging(payload.spreadsheetId);
     } else if (payload && payload.action === 'limpiarStaging') {
       responseData = limpiarStagingSheet(payload.spreadsheetId);
     } else if (payload && payload.action === 'eliminarReporteStaging') {
@@ -329,7 +363,49 @@ function doPost(e) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+/**
+ * Endpoint GET y Apertura Web App
+ */
 function doGet(e) {
-  var html = "<h1>Backend FaCES UCV (Staging & Aprobación)</h1><p>Estado: Activo.</p>";
-  return ContentService.createTextOutput(html).setMimeType(ContentService.MimeType.TEXT);
+  if (e && e.parameter && e.parameter.api === 'true') {
+    var responseData = obtenerReportesStaging(e.parameter.spreadsheetId);
+    return ContentService.createTextOutput(JSON.stringify(responseData))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  try {
+    return HtmlService.createHtmlOutputFromFile('FaCES_Sistema_Completo')
+      .setTitle('Sistema de Reportes FaCES UCV')
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  } catch (err) {
+    var html = "<h1>Backend FaCES UCV (Staging & Aprobación)</h1><p>Estado: Activo.</p>";
+    return ContentService.createTextOutput(html).setMimeType(ContentService.MimeType.TEXT);
+  }
+}
+
+/**
+ * Menú contextual en Google Sheets para abrir el diálogo modal o barra lateral
+ */
+function onOpen() {
+  try {
+    SpreadsheetApp.getUi()
+      .createMenu('🏛️ Sistema FaCES')
+      .addItem('Abrir Plataforma de Reportes (Modal)', 'abrirSistemaFaCES')
+      .addItem('Abrir en Panel Lateral (Sidebar)', 'abrirSistemaFaCESSidebar')
+      .addToUi();
+  } catch (e) {}
+}
+
+function abrirSistemaFaCES() {
+  var html = HtmlService.createHtmlOutputFromFile('FaCES_Sistema_Completo')
+    .setWidth(1200)
+    .setHeight(850)
+    .setTitle('Sistema de Reportes FaCES UCV');
+  SpreadsheetApp.getUi().showModalDialog(html, 'Sistema de Reportes FaCES UCV');
+}
+
+function abrirSistemaFaCESSidebar() {
+  var html = HtmlService.createHtmlOutputFromFile('FaCES_Sistema_Completo')
+    .setTitle('Sistema de Reportes FaCES UCV');
+  SpreadsheetApp.getUi().showSidebar(html);
 }

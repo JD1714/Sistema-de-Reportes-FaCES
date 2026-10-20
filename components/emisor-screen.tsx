@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
+import { sendReportToStaging as apiSendReport } from '@/lib/api-client'
 
 interface EmisorScreenProps {
   onBack: () => void
@@ -158,22 +159,14 @@ export default function EmisorScreen({ onBack }: EmisorScreenProps) {
   const sendReportToStaging = async (payload: any): Promise<boolean> => {
     setIsSubmitting(true)
     try {
-      const res = await fetch('/api/staging', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      })
-
-      const data = await res.json()
-      if (data.status === 'success' || data.id_transaccion) {
+      const data = await apiSendReport(payload)
+      if (data.success || data.id_transaccion) {
         alert(
           `✅ ¡Reporte registrado exitosamente en la Zona de Staging!\n\n` +
           `• ID Transacción: ${data.id_transaccion || 'REQ-REGISTRADO'}\n` +
-          `• Departamento: ${data.departamento_emisor || payload.departamento_emisor}\n` +
-          `• Estado: ${data.estado || 'Pendiente de Revisión'}\n` +
-          `• Fecha: ${data.fecha_emision ? new Date(data.fecha_emision).toLocaleString() : new Date().toLocaleString()}`
+          `• Departamento: ${payload.departamento_emisor || 'FaCES'}\n` +
+          `• Estado: Pendiente de Revisión\n` +
+          `• Fecha: ${new Date().toLocaleString()}`
         )
         return true
       } else {
