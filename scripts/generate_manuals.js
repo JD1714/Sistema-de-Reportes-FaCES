@@ -4,6 +4,14 @@ const { execFileSync } = require('child_process');
 
 const EDGE_PATH = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
 
+function getBase64Image(filename) {
+  const imgPath = path.resolve('scripts', 'screenshots', filename);
+  if (fs.existsSync(imgPath)) {
+    return 'data:image/png;base64,' + fs.readFileSync(imgPath).toString('base64');
+  }
+  return '';
+}
+
 const commonStyles = `
   @page {
     size: A4;
@@ -35,9 +43,10 @@ const commonStyles = `
     line-height: 1.55;
     font-size: 10.5pt;
   }
+  
   /* PORTADA */
   .cover {
-    min-height: 92vh;
+    min-height: 90vh;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -73,7 +82,7 @@ const commonStyles = `
     font-weight: 500;
   }
   .cover-body {
-    margin: 60px 0;
+    margin: 45px 0;
   }
   .cover-tag {
     display: inline-block;
@@ -121,16 +130,16 @@ const commonStyles = `
   
   /* CONTENIDO */
   h1 {
-    font-size: 18pt;
+    font-size: 17pt;
     color: #0f172a;
     border-bottom: 2px solid #1e3a8a;
     padding-bottom: 6px;
-    margin-top: 25px;
+    margin-top: 26px;
     margin-bottom: 14px;
     font-weight: 800;
   }
   h2 {
-    font-size: 14pt;
+    font-size: 13.5pt;
     color: #1e3a8a;
     margin-top: 18px;
     margin-bottom: 8px;
@@ -152,48 +161,15 @@ const commonStyles = `
     margin-bottom: 12px;
   }
   li {
-    margin-bottom: 4px;
+    margin-bottom: 5px;
   }
   
-  /* CAJAS Y ALERTAS */
-  .callout {
-    padding: 12px 16px;
-    border-radius: 8px;
-    margin: 14px 0;
-    font-size: 9.5pt;
-  }
-  .callout-info {
-    background: #f0fdf4;
-    border-left: 4px solid #16a34a;
-    color: #14532d;
-  }
-  .callout-alert {
-    background: #fef2f2;
-    border-left: 4px solid #dc2626;
-    color: #7f1d1d;
-  }
-  .callout-warning {
-    background: #fffbeb;
-    border-left: 4px solid #d97706;
-    color: #78350f;
-  }
-  .callout-primary {
-    background: #eff6ff;
-    border-left: 4px solid #2563eb;
-    color: #1e3a8a;
-  }
-  .callout strong {
-    display: block;
-    margin-bottom: 4px;
-    font-size: 10pt;
-  }
-
   /* TABLAS */
   table {
     width: 100%;
     border-collapse: collapse;
-    margin: 14px 0;
-    font-size: 9pt;
+    margin: 14px 0 20px 0;
+    font-size: 9.5pt;
   }
   th, td {
     border: 1px solid #cbd5e1;
@@ -201,97 +177,122 @@ const commonStyles = `
     text-align: left;
   }
   th {
-    background: #1e3a8a;
-    color: #ffffff;
+    background-color: #f1f5f9;
+    color: #0f172a;
     font-weight: 700;
   }
   tr:nth-child(even) {
-    background: #f8fafc;
+    background-color: #f8fafc;
+  }
+  
+  /* LLAMADOS / CALLOUTS */
+  .callout {
+    border-left: 4px solid #3b82f6;
+    background-color: #eff6ff;
+    padding: 12px 16px;
+    margin: 14px 0 18px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .callout-success {
+    border-left-color: #10b981;
+    background-color: #ecfdf5;
+  }
+  .callout-warning {
+    border-left-color: #f59e0b;
+    background-color: #fffbeb;
+  }
+  .callout-primary {
+    border-left-color: #1e3a8a;
+    background-color: #f0f4ff;
+  }
+  .callout strong {
+    display: block;
+    margin-bottom: 4px;
+    color: #0f172a;
   }
 
-  /* MOCKUP UI BOXES */
-  .mockup-window {
-    background: #0f172a;
+  /* IMÁGENES DE CAPTURA */
+  .img-card {
+    margin: 16px 0 22px 0;
+    border: 1px solid #cbd5e1;
     border-radius: 8px;
-    padding: 14px;
-    color: #f8fafc;
-    margin: 14px 0;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-    font-size: 9.5pt;
+    overflow: hidden;
+    background: #f8fafc;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
-  .mockup-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid #334155;
-    padding-bottom: 8px;
-    margin-bottom: 12px;
+  .img-card img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-bottom: 1px solid #e2e8f0;
   }
-  .mockup-dots {
-    display: flex;
-    gap: 6px;
-  }
-  .mockup-dot {
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-  }
-  .dot-red { background: #ef4444; }
-  .dot-yellow { background: #eab308; }
-  .dot-green { background: #22c55e; }
-  .mockup-title {
+  .img-card-caption {
+    padding: 7px 12px;
     font-size: 8.5pt;
-    color: #94a3b8;
-    font-weight: 600;
+    color: #475569;
+    font-style: italic;
+    background: #f1f5f9;
+    text-align: center;
   }
-  .mockup-content {
-    background: #1e293b;
-    border-radius: 6px;
-    padding: 12px;
-  }
-
+  
+  /* BADGES */
   .badge {
     display: inline-block;
     padding: 2px 8px;
-    border-radius: 12px;
+    border-radius: 4px;
     font-size: 8pt;
     font-weight: 700;
+    text-transform: uppercase;
   }
-  .badge-success { background: #dcfce7; color: #15803d; }
-  .badge-warning { background: #fef3c7; color: #b45309; }
-  .badge-danger { background: #fee2e2; color: #b91c1c; }
-  .badge-blue { background: #dbeafe; color: #1d4ed8; }
-
-  .key-pad {
-    display: inline-block;
-    background: #334155;
-    color: #ffffff;
-    font-family: monospace;
-    font-weight: bold;
-    padding: 2px 8px;
-    border-radius: 4px;
-    border: 1px solid #475569;
-    font-size: 9pt;
-  }
-
-  .header-running {
-    font-size: 8pt;
-    color: #94a3b8;
-    border-bottom: 1px solid #e2e8f0;
-    padding-bottom: 4px;
-    margin-bottom: 16px;
+  .badge-blue { background: #dbeafe; color: #1e40af; }
+  .badge-green { background: #d1fae5; color: #065f46; }
+  .badge-amber { background: #fef3c7; color: #92400e; }
+  
+  /* PASOS NUMERADOS */
+  .step-container {
     display: flex;
-    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+    align-items: flex-start;
+  }
+  .step-num {
+    background: #1e3a8a;
+    color: #ffffff;
+    font-weight: 800;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10pt;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .step-text {
+    flex: 1;
+  }
+  .step-text strong {
+    color: #0f172a;
   }
 `;
 
 function getEmisorManualHtml() {
+  const imgHub = getBase64Image('01_hub_principal.png');
+  const imgDeptos = getBase64Image('02_emisor_seleccion_departamentos.png');
+  const imgPregrado = getBase64Image('03_emisor_formulario_pregrado.png');
+  const imgComunitario = getBase64Image('04_emisor_formulario_servicio_comunitario.png');
+
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Manual de Usuario - Módulo Emisor FaCES UCV</title>
-  <style>${commonStyles}</style>
+  <title>Manual de Usuario - Módulo Emisor | FaCES UCV</title>
+  <style>
+    ${commonStyles}
+  </style>
 </head>
 <body>
 
@@ -301,281 +302,250 @@ function getEmisorManualHtml() {
       <div class="cover-badge-ucv">FaCES</div>
       <div class="cover-inst-text">
         <h3>Universidad Central de Venezuela</h3>
-        <p>Facultad de Ciencias Económicas y Sociales (FaCES)</p>
-        <p>Sistema Automatizado de Reportes Académico-Administrativos</p>
+        <p>Facultad de Ciencias Económicas y Sociales • Sistema Institucional de Reportes</p>
       </div>
     </div>
-
+    
     <div class="cover-body">
-      <span class="cover-tag">Manual Operativo de Usuario</span>
-      <h1 class="cover-title">MÓDULO EMISOR DE REPORTES</h1>
-      <div class="cover-subtitle">Guía Paso a Paso para Dependencias y Departamentos Académicos</div>
+      <span class="cover-tag">Guía de Operación Departamental</span>
+      <h1 class="cover-title">Manual de Usuario:<br>Módulo Emisor</h1>
+      <h2 class="cover-subtitle">Registro y Envío Ágil de Métricas Académico-Administrativas</h2>
       <p class="cover-desc">
-        Este documento instruye al personal encargado de las dependencias oficiales de la FaCES sobre el acceso mediante autenticación por PIN, selección del período mensual, registro detallado de variables y envío seguro de reportes hacia la Zona de Staging institucional.
+        Este documento proporciona una guía visual, rápida y práctica para el personal de secretarías, coordinaciones e institutos de la Facultad. Detalla el procedimiento directo para acceder a la plataforma institucional, seleccionar su departamento sin necesidad de contraseñas, completar el formulario mensual y generar su comprobante digital de entrega.
       </p>
     </div>
-
+    
     <div class="cover-footer">
       <div class="cover-meta">
-        <p><strong>Destinatarios:</strong> Secretarías, Jefaturas y Coordinaciones de los 9 Departamentos Emisores</p>
-        <p><strong>Versión del Sistema:</strong> 2.0 (Seguridad con PIN y Base de Usuarios en Sheets)</p>
+        <p><strong>Destinatarios:</strong> Secretarías, Escuelas, Coordinaciones e Institutos</p>
+        <p><strong>Versión del Sistema:</strong> 2.1 (Acceso Directo y Despliegue Autónomo)</p>
       </div>
       <div class="cover-meta" style="text-align: right;">
-        <p><strong>Fecha de Emisión:</strong> Septiembre 2026</p>
-        <p><strong>Facultad:</strong> FaCES - UCV</p>
+        <p><strong>Fecha de Emisión:</strong> Noviembre 2026</p>
+        <p><strong>Estado:</strong> Oficial / Vigente</p>
       </div>
     </div>
   </div>
 
   <div class="page-break"></div>
 
-  <!-- PÁGINA 2: ÍNDICE Y OBJETIVOS -->
-  <div class="header-running">
-    <span>Sistema de Reportes FaCES UCV</span>
-    <span>Manual de Usuario — Módulo Emisor</span>
-  </div>
-
-  <h1>1. Introducción y Objetivos</h1>
+  <!-- SECCIÓN 1: INTRODUCCIÓN Y BENEFICIOS -->
+  <h1>1. Introducción y Propósito del Sistema</h1>
   <p>
-    El <strong>Sistema de Reportes FaCES</strong> tiene como objetivo agilizar y blindar la recopilación periódica de métricas institucionales (matrícula estudiantil, egresados, servicio comunitario, extensión, biblioteca, compras e investigación) reportadas mensualmente por las dependencias de la facultad.
+    El <strong>Sistema de Reportes FaCES</strong> fue desarrollado para simplificar la recolección periódica de datos estadísticos y administrativos de las distintas dependencias de la Facultad de Ciencias Económicas y Sociales (UCV).
+  </p>
+  <p>
+    Tradicionalmente, la consolidación requería transcribir datos de forma manual directamente sobre un macro archivo de cálculo compartido, lo cual generaba riesgos de sobrescritura accidental de fórmulas, pérdida de información y retrasos operativos. La nueva plataforma soluciona estos inconvenientes mediante un entorno web visual y seguro.
   </p>
 
-  <div class="callout callout-info">
-    <strong>🎯 Beneficios Clave del Sistema</strong>
+  <div class="callout callout-success no-break">
+    <strong>✨ Ventajas Principales para su Departamento:</strong>
     <ul>
-      <li><strong>Protección del Macro Archivo:</strong> Los emisores ya no tocan directamente el complejo archivo Excel/Sheets de la facultad, evitando que se corrompan fórmulas o celdas combinadas.</li>
-      <li><strong>Zona de Staging como Filtro:</strong> Cada reporte entra como una transacción identificada con un código único (ej. <code>REQ-20260921-A1B2</code>) y estado "Pendiente de Revisión".</li>
-      <li><strong>Acceso Seguro con PIN:</strong> Cada uno de los 9 departamentos cuenta con su propia credencial numérica de 6 dígitos.</li>
+      <li><strong>Acceso Directo sin Contraseñas:</strong> Ya no requiere memorizar ni gestionar claves o PINes. Basta con ingresar y pulsar sobre el nombre de su departamento.</li>
+      <li><strong>Formularios Personalizados:</strong> Cada dependencia visualiza exclusivamente los campos y carreras que le competen (ej. Pregrado ve sus 7 carreras; Biblioteca ve atenciones a sala; Compras ve mantenimiento y gestión).</li>
+      <li><strong>Comprobante Digital Único:</strong> Cada envío genera al instante un identificador alfanumérico irrepetible (ej. <code>REQ-20261109-A4K2</code>), el cual garantiza la recepción formal de su informe ante la Administración.</li>
+      <li><strong>Protección Total:</strong> Usted no tiene que interactuar con hojas de cálculo pesadas ni manipular celdas institucionales protegidas.</li>
     </ul>
   </div>
 
-  <h2>Departamentos Oficiales Habilitados</h2>
-  <table>
+  <!-- SECCIÓN 2: PASO 1 - ACCESO DESDE EL HUB -->
+  <h1>2. Acceso al Sistema y Selección de Rol</h1>
+  <p>
+    Para ingresar, abra el enlace institucional provisto por la Administración en su navegador web (Chrome, Edge, Firefox u Opera) o abra la opción <em>🏛️ Sistema FaCES</em> si se encuentra dentro de Google Sheets.
+  </p>
+  <p>
+    La pantalla de bienvenida (<strong>Hub Principal</strong>) le presentará dos portales. Debe hacer clic en el botón azul <strong>"Acceder como Emisor"</strong> ubicado en la tarjeta izquierda:
+  </p>
+
+  <div class="img-card">
+    <img src="${imgHub}" alt="Pantalla de Bienvenida - Hub Institucional" />
+    <div class="img-card-caption">Figura 1: Pantalla principal (Hub). Haga clic en "Acceder como Emisor" para ingresar a los formularios.</div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- SECCIÓN 3: PASO 2 - SELECCIÓN DEL DEPARTAMENTO -->
+  <h1>3. Selección de su Departamento</h1>
+  <p>
+    Al pulsar "Acceder como Emisor", se desplegará el catálogo oficial con las <strong>9 dependencias</strong> de la facultad. Ubique la casilla correspondiente a su oficina y haga clic directamente sobre ella:
+  </p>
+
+  <div class="img-card">
+    <img src="${imgDeptos}" alt="Catálogo de Selección de Departamentos" />
+    <div class="img-card-caption">Figura 2: Cuadrícula con los 9 departamentos oficiales. Selección directa en un solo clic.</div>
+  </div>
+
+  <table class="no-break">
     <thead>
       <tr>
         <th style="width: 35%;">Departamento</th>
-        <th style="width: 35%;">Área de Enfoque</th>
-        <th style="width: 30%;">Destino Institucional</th>
+        <th style="width: 25%;">Icono</th>
+        <th style="width: 40%;">Área de Enfoque Principal</th>
       </tr>
     </thead>
     <tbody>
-      <tr><td>Control de Estudios - Pregrado</td><td>Matrícula por Escuelas (7 menciones)</td><td>Academia (Pregrado)</td></tr>
-      <tr><td>Control de Estudios - Postgrado</td><td>Especializaciones, Maestrías, Doctorados</td><td>Academia (Postgrado)</td></tr>
-      <tr><td>Servicio Comunitario</td><td>Proyectos académicos y labor comunitaria</td><td>Academia / Extensión</td></tr>
-      <tr><td>Biblioteca</td><td>Atención presencial/virtual y talleres</td><td>Estudiantes (Biblioteca)</td></tr>
-      <tr><td>Desarrollo Estudiantil</td><td>Orientación vocacional y psicológica</td><td>Estudiantes (Orientación)</td></tr>
-      <tr><td>Coordinación de Extensión</td><td>Sociocultural, deportiva y cursos</td><td>Extensión Universitaria</td></tr>
-      <tr><td>Departamento de Compras</td><td>Gestión de órdenes y mantenimientos</td><td>Gastos de Funcionamiento</td></tr>
-      <tr><td>Centro de Extensión Profesional</td><td>Cursos, diplomados y asesorías</td><td>Extensión Profesional</td></tr>
-      <tr><td>Instituto de Investigaciones</td><td>Acompañamiento e innovación tecnológica</td><td>Investigación</td></tr>
+      <tr>
+        <td><strong>Control de Estudios - Pregrado</strong></td>
+        <td>🎓 Birrete</td>
+        <td>Métricas de nuevo ingreso, egresados y retiros en las 7 carreras.</td>
+      </tr>
+      <tr>
+        <td><strong>Control de Estudios - Postgrado</strong></td>
+        <td>🏛️ Fachada</td>
+        <td>Especializaciones, Maestrías y Doctorados.</td>
+      </tr>
+      <tr>
+        <td><strong>Servicio Comunitario</strong></td>
+        <td>🤝 Apretón de manos</td>
+        <td>Proyectos de labor social y requisitos de graduación.</td>
+      </tr>
+      <tr>
+        <td><strong>Biblioteca</strong></td>
+        <td>📚 Libros</td>
+        <td>Atención a usuarios en sala de lectura y talleres de alfabetización.</td>
+      </tr>
+      <tr>
+        <td><strong>Desarrollo Estudiantil</strong></td>
+        <td>🌱 Planta</td>
+        <td>Orientación académica, asesorías y programas de bienestar.</td>
+      </tr>
+      <tr>
+        <td><strong>Coordinación de Extensión</strong></td>
+        <td>📣 Megáfono</td>
+        <td>Actividades socio-culturales, deportivas y actualización curricular.</td>
+      </tr>
+      <tr>
+        <td><strong>Departamento de Compras</strong></td>
+        <td>🛒 Carrito</td>
+        <td>Gestión administrativa y conservación de infraestructura.</td>
+      </tr>
+      <tr>
+        <td><strong>Centro de Extensión Profesional</strong></td>
+        <td>💼 Maletín</td>
+        <td>Acompañamiento profesional y formación continua.</td>
+      </tr>
+      <tr>
+        <td><strong>Instituto de Investigaciones</strong></td>
+        <td>🔬 Microscopio</td>
+        <td>Investigación científica y tecnologías para la enseñanza.</td>
+      </tr>
     </tbody>
   </table>
 
   <div class="page-break"></div>
 
-  <!-- PÁGINA 3: ACCESO Y AUTENTICACIÓN -->
-  <div class="header-running">
-    <span>Sistema de Reportes FaCES UCV</span>
-    <span>Manual de Usuario — Módulo Emisor</span>
-  </div>
-
-  <h1>2. Acceso y Autenticación con PIN</h1>
+  <!-- SECCIÓN 4: PASO 3 - LLENADO DEL FORMULARIO -->
+  <h1>4. Llenado del Formulario Mensual</h1>
   <p>
-    Para garantizar que cada oficina reporte exclusivamente en su sección, el módulo emisor cuenta con una pantalla de autenticación previa ubicada en la dirección web <code>/emisor</code>.
+    Una vez seleccionado su departamento, el sistema cargará su formulario a la medida. El proceso de llenado consta de 3 simples pasos:
   </p>
 
-  <div class="mockup-window no-break">
-    <div class="mockup-header">
-      <div class="mockup-dots"><span class="mockup-dot dot-red"></span><span class="mockup-dot dot-yellow"></span><span class="mockup-dot dot-green"></span></div>
-      <span class="mockup-title">Acceso al Módulo Emisor - FaCES UCV</span>
-      <span>🔒 Seguro</span>
-    </div>
-    <div class="mockup-content">
-      <p style="color: #38bdf8; font-weight: bold; margin-bottom: 8px;">1. Seleccione su Departamento:</p>
-      <div style="background: #0f172a; padding: 8px; border-radius: 4px; border: 1px solid #334155; margin-bottom: 12px; color: #e2e8f0;">
-        ▼ [ Control de Estudios - Pregrado ]
-      </div>
-      <p style="color: #38bdf8; font-weight: bold; margin-bottom: 8px;">2. Ingrese su PIN de Acceso (6 dígitos):</p>
-      <div style="display: flex; gap: 8px; justify-content: center; margin-bottom: 12px;">
-        <span class="key-pad">•</span><span class="key-pad">•</span><span class="key-pad">•</span><span class="key-pad">•</span><span class="key-pad">•</span><span class="key-pad">•</span>
-      </div>
-      <div style="text-align: center; background: #2563eb; color: #ffffff; padding: 6px; border-radius: 4px; font-weight: bold;">
-        Ingresar al Formulario
-      </div>
+  <div class="step-container">
+    <div class="step-num">1</div>
+    <div class="step-text">
+      <strong>Seleccionar el Mes a Reportar:</strong> En la parte superior del formulario encontrará el menú desplegable con los meses del año (ej. Enero, Febrero, Octubre). Seleccione el período que está rindiendo.
     </div>
   </div>
 
-  <h2>Pasos para Iniciar Sesión</h2>
-  <ol>
-    <li>Abra el navegador e ingrese a la dirección del sistema: <code>https://[tu-dominio]/emisor</code>.</li>
-    <li>Haga clic en el desplegable <strong>"Seleccione su Departamento"</strong> y elija su dependencia oficial.</li>
-    <li>Introduzca su <strong>PIN de 6 números</strong>:
-      <ul>
-        <li>Puede teclearlo directamente con su teclado físico o presionar los números en el teclado táctil de la pantalla.</li>
-        <li>El cursor avanzará automáticamente de una casilla a la siguiente. Si se equivoca, use la tecla <span class="key-pad">Backspace</span>.</li>
-        <li><strong>PIN Inicial para todos los departamentos:</strong> <span class="badge badge-warning">123456</span>.</li>
-      </ul>
-    </li>
-    <li>El sistema validará sus credenciales automáticamente o al presionar <strong>"Ingresar al Formulario"</strong>.</li>
-  </ol>
+  <div class="step-container">
+    <div class="step-num">2</div>
+    <div class="step-text">
+      <strong>Ingresar los Datos Numéricos:</strong> Rellene los campos con las cifras oficiales de su oficina. Los campos aceptan números enteros positivos. Si para alguna variable no hubo movimiento en ese mes, conserve el valor en <code>0</code>.
+    </div>
+  </div>
 
-  <div class="callout callout-alert no-break">
-    <strong>⚠️ ¿Qué hacer si aparece "PIN Incorrecto"?</strong>
-    <p>
-      Si el sistema indica que el PIN no coincide, verifique no haber digitado un número equivocado. Si su departamento cambió la clave y no la recuerdan, <strong>debe comunicarse con la Administración</strong>. La Administración tiene acceso a la hoja central de cálculo y puede ver o reestablecer su clave en segundos.
-    </p>
+  <div class="step-container">
+    <div class="step-num">3</div>
+    <div class="step-text">
+      <strong>Manejo de Casillas Dinámicas:</strong> En departamentos con pestañas o actividades múltiples (como Servicio Comunitario, Compras o Instituto de Investigaciones), puede agregar renglones de descripción o marcar la casilla <em>"Nada que reportar en esta sección"</em> si no se realizaron actividades.
+    </div>
+  </div>
+
+  <div class="img-card">
+    <img src="${imgPregrado}" alt="Formulario de Control de Estudios Pregrado" />
+    <div class="img-card-caption">Figura 3: Formulario especializado de Pregrado, estructurado por carreras y variables mensuales.</div>
+  </div>
+
+  <div class="img-card">
+    <img src="${imgComunitario}" alt="Formulario dinámico de Servicio Comunitario con pestañas" />
+    <div class="img-card-caption">Figura 4: Formulario con pestañas y casillas opcionales de reporte ("Nada que reportar").</div>
   </div>
 
   <div class="page-break"></div>
 
-  <!-- PÁGINA 4: SEGURIDAD Y CAMBIO DE PIN -->
-  <div class="header-running">
-    <span>Sistema de Reportes FaCES UCV</span>
-    <span>Manual de Usuario — Módulo Emisor</span>
-  </div>
-
-  <h1>3. Gestión de Seguridad y Cambio de PIN</h1>
+  <!-- SECCIÓN 5: PASO 4 - ENVÍO Y COMPROBANTE -->
+  <h1>5. Envío y Generación de Comprobante</h1>
   <p>
-    Cada departamento emisor tiene la potestad de cambiar su clave de acceso para asegurar la privacidad de sus registros mensuales.
+    Al completar la carga de datos, diríjase al final de la página y haga clic en el botón azul <strong>"Enviar Reporte"</strong>.
   </p>
-
-  <h2>Cómo Cambiar el PIN de su Departamento</h2>
-  <p>Una vez dentro del formulario de su departamento, observe la barra superior derecha:</p>
-  
-  <div style="background: #f1f5f9; border: 1px solid #cbd5e1; padding: 10px 15px; border-radius: 8px; display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 15px;">
-    <button style="background: #ffffff; border: 1px solid #cbd5e1; padding: 6px 12px; border-radius: 6px; font-size: 8.5pt; font-weight: bold; color: #0f172a;">🔑 Cambiar PIN</button>
-    <button style="background: #ffffff; border: 1px solid #fecdd3; padding: 6px 12px; border-radius: 6px; font-size: 8.5pt; font-weight: bold; color: #e11d48;">🚪 Cerrar Sesión</button>
-    <button style="background: #ffffff; border: 1px solid #cbd5e1; padding: 6px 12px; border-radius: 6px; font-size: 8.5pt; font-weight: bold; color: #475569;">← Volver al Hub</button>
-  </div>
-
-  <ol>
-    <li>Haga clic en el botón <strong>"Cambiar PIN"</strong>. Se abrirá la ventana emergente de seguridad.</li>
-    <li>Complete los tres campos solicitados:
-      <ul>
-        <li><strong>PIN Actual:</strong> Su clave actual (por ejemplo, <code>123456</code>).</li>
-        <li><strong>Nuevo PIN:</strong> Su nueva clave de exactamente 6 dígitos numéricos.</li>
-        <li><strong>Confirmar Nuevo PIN:</strong> Reingrese exactamente los mismos 6 dígitos.</li>
-      </ul>
-    </li>
-    <li>Presione <strong>"Guardar PIN"</strong>. El sistema actualizará inmediatamente la clave en la base de datos de Google Sheets.</li>
-  </ol>
 
   <div class="callout callout-warning no-break">
-    <strong>🔒 Recomendaciones para la Oficina</strong>
+    <strong>⏳ Control Automático de Doble Clic:</strong>
     <p>
-      Si varias personas de la misma secretaría o jefatura cargan reportes, asegúrese de comunicar el nuevo PIN a sus compañeros de oficina para evitar que queden bloqueados.
+      Para evitar envíos repetidos por doble pulsación accidental, el botón se desactiva de inmediato y mostrará un círculo animado con el mensaje <em>"Enviando a Staging..."</em> mientras los datos se registran en los servidores de Google Workspace. Espere un par de segundos.
     </p>
   </div>
 
-  <h2>Cierre de Sesión Seguro</h2>
   <p>
-    Al terminar la jornada o si otra persona va a cargar datos de un departamento diferente, presione el botón <strong>"Cerrar Sesión"</strong>. Esto limpiará las credenciales temporales de su navegador y devolverá la pantalla al Login con PIN.
+    Una vez procesado exitosamente, la pantalla le mostrará una ventana emergente de confirmación con los detalles de su entrega:
   </p>
 
-  <div class="page-break"></div>
-
-  <!-- PÁGINA 5: LLENADO DE REPORTES -->
-  <div class="header-running">
-    <span>Sistema de Reportes FaCES UCV</span>
-    <span>Manual de Usuario — Módulo Emisor</span>
+  <div class="callout callout-primary no-break">
+    <strong>📋 Comprobante Digital de Transacción</strong>
+    <p style="font-family: monospace; font-size: 10pt; margin-top: 6px;">
+      ✅ ¡Reporte registrado exitosamente en la Zona de Staging!<br><br>
+      • ID Transacción: <strong>REQ-20261109-A4K2</strong><br>
+      • Departamento: Control de Estudios - Pregrado<br>
+      • Estado: Pendiente de Revisión<br>
+      • Fecha: 09/11/2026, 10:15:24 AM
+    </p>
   </div>
 
-  <h1>4. Llenado y Envío del Formulario</h1>
   <p>
-    Cada departamento posee un formulario adaptado exactamente a la estructura del archivo institucional de la FaCES. A continuación se detallan las reglas operativas para el llenado:
+    <strong>¿Desea reportar otro mes o cambiar de oficina?</strong> En la esquina superior derecha dispone de dos botones en todo momento:
   </p>
-
-  <h2>Paso 1: Selección del Mes Reportado</h2>
-  <p>
-    En la parte superior de cada formulario encontrará el selector <strong>"Mes Reportado"</strong>. Los meses habilitados son configurados por la Administración de acuerdo con el calendario administrativo. Seleccione el mes exacto de los datos que registrará.
-  </p>
-
-  <h2>Paso 2: Carga de Datos por Tipo de Formulario</h2>
-
-  <h3>A. Formularios Numéricos por Carreras / Programas (Control de Estudios)</h3>
   <ul>
-    <li><strong>Pregrado:</strong> Muestra las escuelas y menciones (Administradores y Contadores, Economistas, Estadistas y Actuarios, Internacionalistas, Sociólogos, Trabajadores Sociales y Antropólogos). Ingrese los valores de <em>Nuevos Ingresos</em>, <em>Egresados</em> y <em>Retiros</em>.
-      <br><em>Nota especial:</em> La columna <strong>Prosecución</strong> se habilitará exclusivamente si el mes seleccionado es <strong>Enero</strong>, tal como lo exige el reglamento del seguimiento físico.</li>
-    <li><strong>Postgrado:</strong> Muestra las 21 especializaciones, maestrías y doctorados de la facultad. Registre los valores numéricos correspondientes.</li>
+    <li><strong>← Cambiar Departamento:</strong> Le permite regresar a la lista de las 9 oficinas para enviar el reporte de otra coordinación sin cerrar la aplicación.</li>
+    <li><strong>← Volver al Hub:</strong> Le regresa a la pantalla de bienvenida principal del sistema.</li>
   </ul>
 
-  <h3>B. Formularios con Pestañas y Casilla "Nada que Reportar" (Servicio Comunitario, Extensión, etc.)</h3>
-  <ul>
-    <li><strong>Pestañas Temáticas:</strong> Departamentos como Servicio Comunitario se dividen en <em>Academia</em> y <em>Extensión</em>. Puede alternar entre pestañas y añadir filas con el botón <strong>"+ Agregar Ítem"</strong>.</li>
-    <li><strong>Casilla "Nada que reportar":</strong> Si en un mes determinado su dependencia no tuvo actividades en esa área, marque la casilla <em>"Nada que reportar en este mes"</em>. El sistema registrará el reporte con valor cero formalmente, certificando que no se omitió la entrega.</li>
-  </ul>
+  <!-- SECCIÓN 6: PREGUNTAS FRECUENTES -->
+  <h1 style="margin-top: 30px;">6. Preguntas Frecuentes (FAQ)</h1>
+  
+  <p><strong>¿Qué hago si me equivoqué en una cifra después de enviar el reporte?</strong></p>
+  <p>
+    No se preocupe. La información no cae directamente en el libro final de producción, sino en la <em>Zona de Staging</em> para ser auditada por la Administración. Puede enviar un nuevo reporte con las cifras corregidas o notificar al Administrador para que realice el ajuste antes de aprobarlo.
+  </p>
 
-  <h2>Paso 3: Envío a Staging y Notificación</h2>
-  <ol>
-    <li>Revise que los números y descripciones sean correctos.</li>
-    <li>Presione el botón inferior <strong>"Enviar Reporte"</strong>.</li>
-    <li>El botón mostrará el estado <em>"Enviando a Staging..."</em> mientras procesa la transacción de forma cifrada.</li>
-    <li>Aparecerá un mensaje emergente de confirmación:
-      <div style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 8px 12px; border-radius: 6px; font-family: monospace; font-size: 8.5pt; margin: 6px 0;">
-        ✅ ¡Reporte registrado exitosamente en la Zona de Staging!<br>
-        • ID Transacción: REQ-20260921-X9K2<br>
-        • Estado: Pendiente de Revisión
-      </div>
-    </li>
-    <li>El formulario se limpiará automáticamente y <strong>su sesión permanecerá abierta</strong> en su departamento, permitiéndole reportar otro mes inmediatamente si lo necesita.</li>
-  </ol>
+  <p><strong>¿Puedo enviar reportes desde mi teléfono móvil o tablet?</strong></p>
+  <p>
+    Sí. La plataforma está totalmente adaptada para dispositivos móviles. Puede abrir el enlace desde cualquier navegador móvil y los formularios se adaptarán al tamaño de su pantalla.
+  </p>
 
-  <div class="page-break"></div>
-
-  <!-- PÁGINA 6: PREGUNTAS FRECUENTES -->
-  <div class="header-running">
-    <span>Sistema de Reportes FaCES UCV</span>
-    <span>Manual de Usuario — Módulo Emisor</span>
-  </div>
-
-  <h1>5. Preguntas Frecuentes (FAQ) y Soporte</h1>
-
-  <div class="no-break" style="margin-bottom: 16px;">
-    <h3>¿Puedo modificar un reporte después de enviarlo?</h3>
-    <p>
-      Una vez enviado, el reporte queda en estado <em>"Pendiente de Revisión"</em> en la Zona de Staging. Si detecta un error de inmediato, notifíquelo a la <strong>Administración</strong> indicando el <code>ID de Transacción</code> para que lo eliminen de la lista antes de consolidarlo, y usted pueda volver a enviarlo corregido.
-    </p>
-  </div>
-
-  <div class="no-break" style="margin-bottom: 16px;">
-    <h3>¿Por qué no puedo escribir números negativos?</h3>
-    <p>
-      El sistema cuenta con validaciones estrictas de integridad. Todas las variables (estudiantes atendidos, beneficiarios, actividades) deben ser valores enteros mayores o iguales a 0.
-    </p>
-  </div>
-
-  <div class="no-break" style="margin-bottom: 16px;">
-    <h3>¿Qué ocurre si se cierra la pestaña del navegador?</h3>
-    <p>
-      Su sesión por departamento se mantiene en la memoria de la pestaña (<code>sessionStorage</code>). Si cierra por completo el navegador, por seguridad el sistema le solicitará ingresar nuevamente su PIN de 6 dígitos al volver a ingresar.
-    </p>
-  </div>
-
-  <div class="no-break" style="margin-bottom: 16px;">
-    <h3>¿Cómo sé si mi PIN fue actualizado correctamente?</h3>
-    <p>
-      Al presionar "Guardar PIN" en el modal de cambio de clave, aparecerá un indicador en verde confirmando la operación. A partir de ese segundo, cualquier nuevo acceso requerirá el nuevo PIN.
-    </p>
-  </div>
-
-  <div class="callout callout-primary no-break" style="margin-top: 30px;">
-    <strong>📞 Mesa de Ayuda y Contacto Administrativo</strong>
-    <p>
-      Para desbloqueo de claves, habilitación de nuevos meses de reporte o consultas sobre la clasificación de actividades, comuníquese con la <strong>Administración de la FaCES - UCV</strong>.
-    </p>
-  </div>
+  <p><strong>¿El sistema calcula automáticamente los totales?</strong></p>
+  <p>
+    Sí. Para no dañar las fórmulas del macro archivo institucional, el formulario emisor no le pide calcular sumatorias ni totales generales. Usted solo registra los valores brutos de cada variable y el sistema institucional calcula las sumatorias de manera automática.
+  </p>
 
 </body>
 </html>`;
 }
 
 function getReceptorManualHtml() {
+  const imgHub = getBase64Image('01_hub_principal.png');
+  const imgPin = getBase64Image('05_receptor_login_pin.png');
+  const imgDash = getBase64Image('06_receptor_dashboard_principal.png');
+  const imgAudit = getBase64Image('07_receptor_modal_auditoria_detalle.png');
+  const imgConfig = getBase64Image('08_receptor_modal_configuracion.png');
+
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Manual de Usuario - Módulo Receptor FaCES UCV</title>
-  <style>${commonStyles}</style>
+  <title>Manual de Usuario - Módulo Receptor (Revisor) | FaCES UCV</title>
+  <style>
+    ${commonStyles}
+  </style>
 </head>
 <body>
 
@@ -585,262 +555,337 @@ function getReceptorManualHtml() {
       <div class="cover-badge-ucv">FaCES</div>
       <div class="cover-inst-text">
         <h3>Universidad Central de Venezuela</h3>
-        <p>Facultad de Ciencias Económicas y Sociales (FaCES)</p>
-        <p>Sistema Automatizado de Reportes Académico-Administrativos</p>
+        <p>Facultad de Ciencias Económicas y Sociales • Coordinación Administrativa y Decanato</p>
       </div>
     </div>
-
+    
     <div class="cover-body">
-      <span class="cover-tag">Manual de Administración y Consolidación</span>
-      <h1 class="cover-title">MÓDULO RECEPTOR DE REPORTES</h1>
-      <div class="cover-subtitle">Gestión de Staging, Aprobaciones y Asistente de Copiado Inteligente</div>
+      <span class="cover-tag">Manual Técnico-Operativo para Coordinadores y Revisores</span>
+      <h1 class="cover-title">Manual de Usuario:<br>Módulo Receptor (Revisor)</h1>
+      <h2 class="cover-subtitle">Auditoría, Copiado Inteligente y Consolidación en la Hoja Institucional</h2>
       <p class="cover-desc">
-        Este manual instruye a la Administración y Decanato de la FaCES en la operación del panel de recepción de reportes: control de acceso maestro por PIN, revisión y auditoría de transacciones en la Zona de Staging, administración centralizada de usuarios emisores y el uso del Asistente de Copiado Inteligente al macro archivo institucional.
+        Guía integral y detallada para el personal de administración y revisión. Abarca desde la autenticación mediante PIN Maestro de 6 dígitos, la supervisión de la Zona de Staging en tiempo real, el procedimiento asistido de <strong>Copiado Inteligente</strong> para la inyección vertical de métricas sin tocar fórmulas institucionales, hasta la aprobación formal y el mantenimiento anual de la base de datos.
       </p>
     </div>
-
+    
     <div class="cover-footer">
       <div class="cover-meta">
-        <p><strong>Destinatarios:</strong> Equipo de Administración, Decanato y Consolidadores de Datos</p>
-        <p><strong>Versión del Sistema:</strong> 2.0 (Consolidación Desacoplada y Seguridad Multicapa)</p>
+        <p><strong>Destinatarios:</strong> Coordinadores de Planificación, Decanato y Administradores</p>
+        <p><strong>Versión del Sistema:</strong> 2.1 (Seguridad Maestro, Staging y Asistencia de Pegado)</p>
       </div>
       <div class="cover-meta" style="text-align: right;">
-        <p><strong>Fecha de Emisión:</strong> Septiembre 2026</p>
-        <p><strong>Facultad:</strong> FaCES - UCV</p>
+        <p><strong>Fecha de Emisión:</strong> Noviembre 2026</p>
+        <p><strong>Estado:</strong> Oficial / Vigente</p>
       </div>
     </div>
   </div>
 
   <div class="page-break"></div>
 
-  <!-- PÁGINA 2: ARQUITECTURA -->
-  <div class="header-running">
-    <span>Sistema de Reportes FaCES UCV</span>
-    <span>Manual de Usuario — Módulo Receptor</span>
-  </div>
-
-  <h1>1. Arquitectura y Modelo Operativo</h1>
+  <!-- SECCIÓN 1: ARQUITECTURA DEL SISTEMA -->
+  <h1>1. Arquitectura y Filosofía del Sistema</h1>
   <p>
-    El <strong>Módulo Receptor</strong> es la cabina de mando desde la cual la Administración supervisa la información enviada por las 9 dependencias antes de que aterrice en el archivo final de Excel ("Seguimiento Físico").
+    El macro archivo institucional <em>"Seguimiento Físico"</em> de la FaCES UCV es una herramienta compleja que contiene múltiples hojas especializadas (<strong>Academia</strong>, <strong>Extensión</strong>, <strong>Investigación</strong>, <strong>Estudiantes</strong> y <strong>Otros Gastos</strong>) con cabeceras jerárquicas multinivel, matrices por mes y fórmulas de consolidación matemática muy sensibles.
+  </p>
+  <p>
+    En el modelo operativo anterior, la manipulación de este archivo por diversos usuarios provocaba con frecuencia el borrado accidental de fórmulas y el desalineamiento de celdas. Para erradicar este problema definitivamente, el sistema fue diseñado bajo una <strong>arquitectura desacoplada en tres capas</strong>:
   </p>
 
-  <div class="callout callout-info">
-    <strong>💡 Principio de Seguridad: El Desacople Total</strong>
-    <p>
-      El sistema nunca escribe de forma automatizada ni desatendida dentro del archivo Excel institucional. La estructura institucional cuenta con cabeceras profundas (más de 100 filas de formatos), celdas combinadas por mes y fórmulas anidadas de suma acumulativa. Para evitar cualquier riesgo de corrupción, el sistema utiliza el flujo de <strong>Copiado Inteligente</strong>: el software organiza y ordena los datos exactamente en la matriz requerida, y el consolidador los pega con un clic.
-    </p>
-  </div>
-
-  <h2>Flujo de Trabajo del Receptor</h2>
-  <div class="mockup-window no-break">
-    <div class="mockup-header">
-      <div class="mockup-dots"><span class="mockup-dot dot-red"></span><span class="mockup-dot dot-yellow"></span><span class="mockup-dot dot-green"></span></div>
-      <span class="mockup-title">Ciclo de Consolidación FaCES</span>
-      <span>Flujo Seguro</span>
-    </div>
-    <div class="mockup-content">
-      <p><strong>Paso 1: Recepción en Staging ➔</strong> Las oficinas emiten reportes con ID único.</p>
-      <p><strong>Paso 2: Inspección y Filtros ➔</strong> La Administración revisa consistencia y totales.</p>
-      <p><strong>Paso 3: Aprobación ➔</strong> Se marca la transacción como <span class="badge badge-success">Aprobado</span>.</p>
-      <p><strong>Paso 4: Copiado Inteligente ➔</strong> Con un clic se copia al portapapeles en el formato exacto.</p>
-      <p><strong>Paso 5: Pegado en Macro ➔</strong> Se pega en el Google Sheet / Excel institucional sin alterar fórmulas.</p>
-    </div>
-  </div>
-
-  <div class="page-break"></div>
-
-  <!-- PÁGINA 3: ACCESO Y SEGURIDAD -->
-  <div class="header-running">
-    <span>Sistema de Reportes FaCES UCV</span>
-    <span>Manual de Usuario — Módulo Receptor</span>
-  </div>
-
-  <h1>2. Acceso y Seguridad Administrativa</h1>
-  <p>
-    El acceso a <code>/receptor</code> se encuentra protegido por una puerta de seguridad con PIN maestro para restringir la consola únicamente al personal autorizado.
-  </p>
-
-  <h2>Autenticación por PIN Maestro</h2>
-  <ul>
-    <li><strong>PIN Inicial de Fábrica:</strong> <span class="badge badge-warning">123456</span>.</li>
-    <li>El consolidador ingresa los 6 dígitos en el teclado en pantalla o físico.</li>
-    <li>La sesión se autoriza y guarda en la memoria del navegador (<code>FACES_RECEPTOR_AUTH</code>).</li>
-  </ul>
-
-  <h2>Botón de Bloqueo Rápido 🔒</h2>
-  <p>
-    En la esquina superior derecha del panel receptor encontrará el botón de bloqueo con ícono de candado:
-  </p>
-  <div style="background: #f1f5f9; border: 1px solid #cbd5e1; padding: 8px 15px; border-radius: 8px; display: inline-flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-    <span style="font-size: 14pt;">🔒</span>
-    <span style="font-weight: bold; font-size: 9.5pt; color: #0f172a;">Bloquear</span>
-  </div>
-  <p>
-    Al pulsar este botón al levantarse de su puesto o retirarse, la sesión se cierra de inmediato y el panel queda oculto tras la pantalla de PIN.
-  </p>
-
-  <h2>Cambio del PIN Administrativo</h2>
-  <ol>
-    <li>Haga clic en el botón <strong>⚙️ Configuración</strong> en la barra superior.</li>
-    <li>En la sección <strong>"Seguridad y PIN de Acceso"</strong>, ingrese:
-      <ul>
-        <li>El PIN actual.</li>
-        <li>El nuevo PIN de 6 dígitos numéricos.</li>
-        <li>Confirmación del nuevo PIN.</li>
-      </ul>
-    </li>
-    <li>Presione <strong>"Actualizar PIN"</strong>.</li>
-  </ol>
-
-  <div class="callout callout-warning no-break">
-    <strong>📍 ¿Dónde reside este PIN en Google Sheets?</strong>
-    <p>
-      El PIN del Receptor se almacena en la pestaña <strong><code>Configuración</code></strong> de la Hoja de Staging:
-      <br>Celda A2: <code>PIN_RECEPTOR</code> | Celda B2: <code>123456</code>.
-      <br>En caso de olvido, cualquier administrador con acceso a Google Drive puede abrir esa hoja y verificar o editar el valor de la celda B2 directamente.
-    </p>
-  </div>
-
-  <div class="page-break"></div>
-
-  <!-- PÁGINA 4: MONITOREO Y STAGING -->
-  <div class="header-running">
-    <span>Sistema de Reportes FaCES UCV</span>
-    <span>Manual de Usuario — Módulo Receptor</span>
-  </div>
-
-  <h1>3. Gestión de la Zona de Staging</h1>
-  <p>
-    La pantalla principal del receptor lista en tiempo real todas las transacciones recibidas desde los departamentos emisores.
-  </p>
-
-  <h2>Herramientas de Filtrado y Búsqueda</h2>
-  <ul>
-    <li><strong>Selector de Departamento:</strong> Permite aislar los reportes de una dependencia específica (ej. sólo <em>Biblioteca</em> o sólo <em>Pregrado</em>).</li>
-    <li><strong>Filtro de Estado:</strong>
-      <ul>
-        <li><span class="badge badge-warning">Pendiente de Revisión</span>: Reportes recién llegados pendientes de validación.</li>
-        <li><span class="badge badge-success">Aprobado</span>: Reportes revisados y listos para copiado institucional.</li>
-      </ul>
-    </li>
-    <li><strong>Barra de Búsqueda:</strong> Busca instantáneamente por ID de transacción (ej. <code>REQ-20260921</code>) o por mes.</li>
-  </ul>
-
-  <h2>Inspección de Tarjetas de Transacción</h2>
-  <div class="mockup-window no-break">
-    <div class="mockup-header">
-      <span class="mockup-title">Ejemplo de Reporte Recibido</span>
-      <span class="badge badge-warning">Pendiente de Revisión</span>
-    </div>
-    <div class="mockup-content">
-      <p style="font-size: 11pt; font-weight: bold; color: #ffffff;">Control de Estudios - Pregrado</p>
-      <p style="color: #94a3b8; font-size: 8.5pt;">ID: REQ-20260921-8F3A • Mes: Marzo • Fecha: 21/09/2026 10:15 am</p>
-      <div style="margin: 10px 0; background: #0f172a; padding: 8px; border-radius: 4px; font-size: 8.5pt;">
-        📊 <strong>7 Carreras registradas</strong>: Administradores (45 ingresos, 12 egresos), Economistas (30 ingresos)...
-      </div>
-      <div style="display: flex; gap: 8px; justify-content: flex-end;">
-        <span style="background: #15803d; color: #ffffff; padding: 4px 8px; border-radius: 4px; font-size: 8pt; font-weight: bold;">✓ Aprobar</span>
-        <span style="background: #2563eb; color: #ffffff; padding: 4px 8px; border-radius: 4px; font-size: 8pt; font-weight: bold;">📋 Copiado Inteligente</span>
-        <span style="background: #b91c1c; color: #ffffff; padding: 4px 8px; border-radius: 4px; font-size: 8pt; font-weight: bold;">🗑️ Eliminar</span>
-      </div>
-    </div>
-  </div>
-
-  <h2>Acciones Disponibles en cada Reporte</h2>
-  <ol>
-    <li><strong>Ver Detalles:</strong> Despliega el desglose completo del payload JSON recibido en una tabla legible.</li>
-    <li><strong>Aprobar Reporte:</strong> Cambia el estado en la base de datos a "Aprobado", indicando al equipo que los datos fueron auditados.</li>
-    <li><strong>Eliminar Reporte:</strong> Borra la transacción de la Zona de Staging en caso de duplicados o pruebas emitidas por error.</li>
-    <li><strong>Limpiar Staging (Masivo):</strong> En el encabezado superior existe la opción de limpiar la hoja completa de Staging al cerrar el período mensual, preservando siempre la fila 1 de encabezados.</li>
-  </ol>
-
-  <div class="page-break"></div>
-
-  <!-- PÁGINA 5: ASISTENTE DE COPIADO INTELIGENTE -->
-  <div class="header-running">
-    <span>Sistema de Reportes FaCES UCV</span>
-    <span>Manual de Usuario — Módulo Receptor</span>
-  </div>
-
-  <h1>4. El Asistente de Copiado Inteligente</h1>
-  <p>
-    El <strong>Copiado Inteligente</strong> es la funcionalidad estrella para transferir los datos al archivo macro institucional sin riesgos técnicos.
-  </p>
-
-  <h2>¿Cómo Funciona?</h2>
-  <p>
-    Al presionar <strong>"Copiado Inteligente"</strong> en una tarjeta de reporte, el sistema:
-  </p>
-  <ol>
-    <li>Identifica la hoja de destino exacta (ej. <code>Academia</code>, <code>Extensión</code> o <code>Estudiantes</code>).</li>
-    <li>Detecta el mes reportado (ej. <code>Marzo</code>) y calcula las columnas exactas donde debe aterrizar cada variable.</li>
-    <li>Construye una matriz de datos formateada para tabuladores (compatible con Excel y Google Sheets).</li>
-    <li>Copia esa matriz al portapapeles de su sistema operativo y muestra en pantalla la celda recomendada de inicio (por ejemplo: <em>"Pegar en celda D114 de la hoja Academia"</em>).</li>
-  </ol>
-
-  <div class="callout callout-info no-break">
-    <strong>📋 Pasos para Realizar el Pegado</strong>
-    <ol style="margin-left: 15px; margin-top: 5px;">
-      <li>Haga clic en <strong>"Copiar Datos"</strong> en la ventana del Asistente.</li>
-      <li>Abra el archivo de Excel o Google Sheets institucional en otra pestaña o ventana.</li>
-      <li>Ubíquese en la pestaña indicada y seleccione la celda de inicio.</li>
-      <li>Presione <span class="key-pad">Ctrl</span> + <span class="key-pad">V</span> (Pegar). Los datos se distribuirán automáticamente en las columnas y filas correctas sin desplazar ni tocar las fórmulas del archivo.</li>
+  <div class="callout callout-primary no-break">
+    <strong>🏛️ Las Tres Capas de la Solución Institucional:</strong>
+    <ol style="margin-top: 6px;">
+      <li><strong>Capa de Captura (Portal Emisor):</strong> Formularios limpios donde las secretarías cargan únicamente valores numéricos directos sin tener acceso ni conocimiento del archivo de cálculo final.</li>
+      <li><strong>Capa de Aislamiento (Zona de Staging):</strong> Base de datos intermedia que actúa como un <em>Firewall</em> (cortafuegos). Los envíos quedan almacenados en espera de auditoría humana con identificador único (ID de transacción).</li>
+      <li><strong>Capa de Consolidación Asistida (Módulo Receptor):</strong> Dashboard administrativo donde el Revisor inspecciona la data, valida su coherencia y, mediante la herramienta de <strong>Copiado Inteligente</strong>, pega bloques completos de métricas en la hoja institucional de forma instantánea sin riesgo de dañar fórmulas.</li>
     </ol>
   </div>
 
-  <div class="page-break"></div>
-
-  <!-- PÁGINA 6: GESTIÓN DE USUARIOS Y MESES -->
-  <div class="header-running">
-    <span>Sistema de Reportes FaCES UCV</span>
-    <span>Manual de Usuario — Módulo Receptor</span>
-  </div>
-
-  <h1>5. Gestión Centralizada de Usuarios y Meses</h1>
-  <p>
-    Como Administración, usted tiene la autoridad y control total sobre quién puede emitir reportes y en qué fechas.
-  </p>
-
-  <h2>Pestaña Usuarios en Google Sheets (Staging)</h2>
-  <p>
-    La autenticación de los 9 departamentos emisores se administra en la pestaña <strong><code>Usuarios</code></strong> de la Hoja de Staging:
-  </p>
-  <table>
+  <table class="no-break">
     <thead>
       <tr>
-        <th style="width: 60%;">Columna A: Departamento</th>
-        <th style="width: 40%;">Columna B: PIN</th>
+        <th style="width: 25%;">Componente</th>
+        <th style="width: 35%;">Ubicación / Tecnología</th>
+        <th style="width: 40%;">Rol de Seguridad</th>
       </tr>
     </thead>
     <tbody>
-      <tr><td>Control de Estudios - Pregrado</td><td><code>123456</code> (o clave personalizada)</td></tr>
-      <tr><td>Control de Estudios - Postgrado</td><td><code>123456</code> (o clave personalizada)</td></tr>
-      <tr><td>Servicio Comunitario</td><td><code>123456</code> (o clave personalizada)</td></tr>
-      <tr><td>Biblioteca</td><td><code>123456</code> (o clave personalizada)</td></tr>
-      <tr><td>Desarrollo Estudiantil</td><td><code>123456</code> (o clave personalizada)</td></tr>
-      <tr><td>Coordinación de Extensión</td><td><code>123456</code> (o clave personalizada)</td></tr>
-      <tr><td>Departamento de Compras</td><td><code>123456</code> (o clave personalizada)</td></tr>
-      <tr><td>Centro de Extensión Profesional</td><td><code>123456</code> (o clave personalizada)</td></tr>
-      <tr><td>Instituto de Investigaciones</td><td><code>123456</code> (o clave personalizada)</td></tr>
+      <tr>
+        <td><strong>Hub & Emisor</strong></td>
+        <td>SPA Web / HTML Autónomo</td>
+        <td>Acceso abierto a secretarías para carga departamental. Cero acceso al archivo maestro.</td>
+      </tr>
+      <tr>
+        <td><strong>Zona de Staging</strong></td>
+        <td>Pestaña oculta / protegida en Sheets</td>
+        <td>Almacena payloads en JSON con sellos de tiempo y estado de revisión.</td>
+      </tr>
+      <tr>
+        <td><strong>Dashboard Receptor</strong></td>
+        <td>Interfaz privada con PIN</td>
+        <td>Solo accesible por la Administración para auditar y autorizar transacciones.</td>
+      </tr>
+      <tr>
+        <td><strong>Copiado Inteligente</strong></td>
+        <td>Algoritmo de portapapeles vertical</td>
+        <td>Formatea vectores de datos con saltos de línea para pegado directo en 1 segundo.</td>
+      </tr>
     </tbody>
   </table>
 
+  <!-- SECCIÓN 2: ACCESO Y SEGURIDAD -->
+  <h1>2. Acceso Seguro y Autenticación con PIN Maestro</h1>
+  <p>
+    El módulo receptor contiene funciones privilegiadas (auditoría, edición local, aprobación de datos y purga de base de datos). Por ende, su acceso se encuentra resguardado bajo un estricto control de seguridad por <strong>PIN numérico de 6 dígitos</strong>.
+  </p>
+
+  <div class="step-container">
+    <div class="step-num">1</div>
+    <div class="step-text">
+      <strong>Ingreso desde el Hub:</strong> En la pantalla de bienvenida, pulse el botón azul oscuro <strong>"Acceder como Revisor"</strong>.
+    </div>
+  </div>
+
+  <div class="img-card">
+    <img src="${imgHub}" alt="Acceso al Portal Receptor desde el Hub" />
+    <div class="img-card-caption">Figura 1: Selección de portal en el Hub Institucional. Pulse "Acceder como Revisor".</div>
+  </div>
+
+  <div class="step-container">
+    <div class="step-num">2</div>
+    <div class="step-text">
+      <strong>Digitación del PIN Maestro:</strong> Ingrese la clave de 6 dígitos numéricos. Puede utilizar el teclado físico de su computador o hacer clic sobre las teclas en pantalla. El sistema incluye avance y retroceso automático de cursor.
+    </div>
+  </div>
+
+  <div class="img-card">
+    <img src="${imgPin}" alt="Modal de Autenticación por PIN de 6 dígitos" />
+    <div class="img-card-caption">Figura 2: Interfaz segura de autenticación del receptor con PIN maestro.</div>
+  </div>
+
   <div class="callout callout-warning no-break">
-    <strong>💡 Soporte por Olvido de Clave de un Emisor</strong>
+    <strong>🔑 PIN Maestro Inicial:</strong>
     <p>
-      Si una oficina (por ejemplo, <em>Biblioteca</em>) olvidó su clave, usted no necesita programar nada: simplemente abra la hoja de Staging en Google Sheets, vaya a la pestaña <strong>Usuarios</strong>, ubique la fila de "Biblioteca" y lea el PIN o escriba uno nuevo directamente en la columna B.
+      El sistema viene configurado de fábrica con el PIN maestro <code>123456</code>. Este valor se encuentra respaldado en la celda <code>B2</code> de la pestaña <em>"Configuración"</em> de la hoja de cálculo. En la Sección 5 de este manual se explica cómo cambiarlo por una clave secreta personalizada.
     </p>
   </div>
 
-  <h2>Control de Meses Habilitados</h2>
+  <div class="page-break"></div>
+
+  <!-- SECCIÓN 3: DASHBOARD ADMINISTRATIVO -->
+  <h1>3. El Dashboard Administrativo en Detalle</h1>
   <p>
-    En la ventana de <strong>⚙️ Configuración</strong> del Receptor, puede marcar o desmarcar qué meses del año están activos para la recepción de información. Si desmarca un mes (por ejemplo, Julio y Agosto por vacaciones), los emisores no podrán seleccionarlo en sus formularios, garantizando el orden del calendario académico.
+    Al autenticarse con éxito, se despliega el panel de control del Revisor. La interfaz ha sido organizada en bloques ergonómicos para agilizar la labor de inspección:
   </p>
 
-  <div class="callout callout-primary no-break" style="margin-top: 30px;">
+  <div class="img-card">
+    <img src="${imgDash}" alt="Dashboard Principal del Receptor" />
+    <div class="img-card-caption">Figura 3: Panel administrativo con tarjetas de conteo, barra de filtros y listado de transacciones de Staging.</div>
+  </div>
+
+  <h2>3.1. Tarjetas de Resumen de Métricas</h2>
+  <p>
+    Ubicadas en la franja superior, proveen un balance en tiempo real del estado de los envíos:
+  </p>
+  <ul>
+    <li><strong>Total de Reportes:</strong> Número acumulado de transacciones registradas en la Zona de Staging.</li>
+    <li><strong>Pendientes de Revisión (Ámbar):</strong> Reportes enviados por los departamentos que aún no han sido consolidados en el macro archivo institucional.</li>
+    <li><strong>Aprobados (Verde):</strong> Reportes que ya fueron auditados, copiados al macro archivo y marcados como listos.</li>
+  </ul>
+
+  <h2>3.2. Herramientas de Búsqueda y Filtrado Rápido</h2>
+  <ul>
+    <li><strong>Botones de Estado:</strong> Permiten alternar instantáneamente entre la vista de <em>"Todos"</em>, solo <em>"Pendiente de Revisión"</em> o únicamente <em>"Aprobado"</em>.</li>
+    <li><strong>Buscador Inteligente:</strong> Permite localizar reportes en milisegundos digitando parte del código (ej. <code>REQ-20261109</code>) o el nombre del departamento (ej. <em>"Pregrado"</em> o <em>"Biblioteca"</em>).</li>
+    <li><strong>Botón 🔄 Recargar:</strong> Consulta nuevamente la hoja de cálculo en segundo plano para verificar si han entrado reportes nuevos de las secretarías.</li>
+    <li><strong>Botón 🔒 Bloquear:</strong> Cierra inmediatamente la sesión activa en el navegador y solicita el PIN nuevamente para evitar accesos desatendidos.</li>
+  </ul>
+
+  <div class="page-break"></div>
+
+  <!-- SECCIÓN 4: AUDITORÍA Y COPIADO INTELIGENTE -->
+  <h1>4. Auditoría y Herramienta de "Copiado Inteligente"</h1>
+  <p>
+    Esta es la función nuclear del sistema y la mayor innovación para proteger el macro archivo institucional. Para abrirla, haga clic en el botón azul <strong>"Revisar y Copiar Datos"</strong> en cualquiera de las filas de reporte:
+  </p>
+
+  <div class="img-card">
+    <img src="${imgAudit}" alt="Modal de Auditoría Detallada y Copiado Inteligente" />
+    <div class="img-card-caption">Figura 4: Modal de auditoría con la herramienta de Copiado Inteligente (botones verdes) y desglose de métricas.</div>
+  </div>
+
+  <h2>4.1. Anatomía del Modal de Auditoría</h2>
+  <ul>
+    <li><strong>Encabezado de Transacción:</strong> Muestra el ID único oficial (ej. <code>REQ-20261109-A4K2</code>), el departamento emisor y el mes al que corresponden las cifras reportadas.</li>
+    <li><strong>Pestañas de Destino:</strong> Si el departamento reporta a más de una hoja del macro archivo (como Servicio Comunitario que reporta a <em>Academia</em> y a <em>Extensión</em>), el modal presenta pestañas independientes para cada destino.</li>
+    <li><strong>Tabla Estructurada:</strong> Presenta los renglones ordenados exactamente en la misma secuencia que exige el macro archivo institucional (ej. para Pregrado: <em>1. Administradores y Contadores</em>, <em>2. Economistas</em>, <em>3. Estadistas</em>, etc.).</li>
+  </ul>
+
+  <h2>4.2. Funcionamiento del "Copiado Inteligente" (Paso a Paso)</h2>
+  <p>
+    En lugar de copiar número por número celda por celda (lo que causaba fatiga y errores humanos), el sistema cuenta con la tecnología de <strong>portapapeles vertical optimizado</strong>:
+  </p>
+
+  <div class="step-container">
+    <div class="step-num">1</div>
+    <div class="step-text">
+      <strong>Hacer Clic en "Copiar Columna":</strong> En la fila de cabecera verde de la métrica deseada (por ejemplo, <em>"Nuevos Ingresos"</em>), pulse el botón verde <strong>"Copiar Columna"</strong>. El sistema extraerá los valores de las 7 carreras en orden y los formateará internamente con saltos de línea (<code>\n</code>). Aparecerá un aviso: <em>"¡Copiado! 7 valores listos para pegar"</em>.
+    </div>
+  </div>
+
+  <div class="step-container">
+    <div class="step-num">2</div>
+    <div class="step-text">
+      <strong>Abrir el Macro Archivo en Google Sheets:</strong> Cambie a la pestaña de su navegador donde tiene abierto el libro oficial <em>"Seguimiento Físico"</em> y ubíquese en la hoja correspondiente (ej. <em>Academia</em>).
+    </div>
+  </div>
+
+  <div class="step-container">
+    <div class="step-num">3</div>
+    <div class="step-text">
+      <strong>Seleccionar la Celda Superior del Mes:</strong> Haga clic <strong>únicamente en la primera celda</strong> de la columna del mes correspondiente (la fila de <em>Administradores y Contadores Públicos</em>). <strong>No es necesario seleccionar todo el rango</strong>.
+    </div>
+  </div>
+
+  <div class="step-container">
+    <div class="step-num">4</div>
+    <div class="step-text">
+      <strong>Pegar con Ctrl + V:</strong> Presione <code>Ctrl + V</code> (o <code>Cmd + V</code> en Mac). Los 7 valores caerán verticalmente en las 7 celdas continuas en menos de un segundo.
+    </div>
+  </div>
+
+  <div class="callout callout-success no-break">
+    <strong>🛡️ ¿Por qué esto protege las fórmulas institucionales?</strong>
+    <p>
+      Porque el pegado vertical estándar de Google Sheets solo inyecta valores de texto plano en las celdas de entrada. Las celdas inferiores de <em>"Totales"</em>, porcentajes y prosecución mantienen intactas sus fórmulas originales (<code>=SUM(...)</code>) y se recalculan automáticamente sin haber sufrido manipulaciones.
+    </p>
+  </div>
+
+  <h2>4.3. Marcado como Aprobado</h2>
+  <p>
+    Una vez copiadas las columnas correspondientes en el libro maestro, regrese al modal y presione el botón verde inferior <strong>"Aprobar y Marcar como Listo"</strong>.
+  </p>
+  <p>
+    El sistema enviará una señal a la Zona de Staging actualizando la columna <em>Estado</em> a <strong>"Aprobado"</strong>. La tarjeta cambiará de color a verde en el listado principal, dejando constancia de que ese reporte ya fue debidamente auditado y consolidado.
+  </p>
+
+  <div class="page-break"></div>
+
+  <!-- SECCIÓN 5: CONFIGURACIÓN Y MANTENIMIENTO -->
+  <h1>5. Configuración Administrativa y Mantenimiento</h1>
+  <p>
+    En la esquina superior derecha del panel principal se encuentra el botón <strong>"⚙️ Configuración"</strong>. Al pulsarlo, se abrirá el modal de administración avanzada del sistema:
+  </p>
+
+  <div class="img-card">
+    <img src="${imgConfig}" alt="Modal de Configuración y Gestión de PIN" />
+    <div class="img-card-caption">Figura 5: Modal de configuración: cambio de PIN maestro y herramientas de mantenimiento de Staging.</div>
+  </div>
+
+  <h2>5.1. Cambio de PIN Maestro de la Administración</h2>
+  <p>
+    Para resguardar el acceso del revisor, se recomienda actualizar el PIN maestro periódicamente:
+  </p>
+  <ol>
+    <li>En la sección <em>"Seguridad y PIN de Acceso"</em>, digite su <strong>PIN Actual</strong> (ej. <code>123456</code>).</li>
+    <li>Introduzca el <strong>Nuevo PIN</strong> (debe ser estrictamente de 6 dígitos numéricos).</li>
+    <li>Escriba nuevamente la clave en <strong>Confirmar Nuevo PIN</strong> para validar que no hubo errores tipográficos.</li>
+    <li>Haga clic en <strong>"Actualizar PIN"</strong>. El sistema guardará la nueva clave en la base de datos de Google Sheets de manera inmediata.</li>
+  </ol>
+
+  <h2>5.2. Mantenimiento y Purga de la Zona de Staging</h2>
+  <p>
+    Al finalizar un año fiscal o ciclo académico, o si se desea reiniciar el entorno de pruebas, la Administración puede depurar la base de datos intermedia:
+  </p>
+  <ul>
+    <li><strong>Eliminación Individual:</strong> En el listado de reportes, cada tarjeta cuenta con un botón rojo con icono de papelera. Permite descartar un reporte específico (por ejemplo, una prueba duplicada enviada por error).</li>
+    <li><strong>Limpieza General (Botón Rojo Superior):</strong> El botón <em>"Limpiar Staging"</em> borra la totalidad de las filas de datos de la Zona de Staging pero <strong>conserva intactas las cabeceras</strong> y la configuración institucional. El sistema siempre solicitará una confirmación explícita antes de ejecutar esta acción irreversible.</li>
+  </ul>
+
+  <div class="page-break"></div>
+
+  <!-- SECCIÓN 6: MATRIZ DE MAPEO DEPARTAMENTAL -->
+  <h1>6. Matriz de Mapeo Departamental (Referencia Rápida)</h1>
+  <p>
+    La siguiente tabla detalla la correspondencia exacta entre cada dependencia emisora y su ubicación física en el macro archivo institucional <em>"Seguimiento Físico"</em>:
+  </p>
+
+  <table class="no-break">
+    <thead>
+      <tr>
+        <th style="width: 25%;">Departamento Emisor</th>
+        <th style="width: 25%;">Hoja de Destino Oficial</th>
+        <th style="width: 50%;">Bloque / Sección Institucional</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Control de Estudios - Pregrado</strong></td>
+        <td>Academia</td>
+        <td>Control de Estudios - Pregrado (7 Carreras oficiales).</td>
+      </tr>
+      <tr>
+        <td><strong>Control de Estudios - Postgrado</strong></td>
+        <td>Academia</td>
+        <td>Control de Estudios - Postgrado (10 Programas de Especialización y Maestrías).</td>
+      </tr>
+      <tr>
+        <td><strong>Servicio Comunitario</strong></td>
+        <td>Academia<br>Extensión</td>
+        <td>Servicio comunitario (requisito para graduarse)<br>Servicio comunitario (labor social comunitaria).</td>
+      </tr>
+      <tr>
+        <td><strong>Biblioteca</strong></td>
+        <td>Estudiantes</td>
+        <td>Biblioteca Central de FaCES (Atención en sala y talleres).</td>
+      </tr>
+      <tr>
+        <td><strong>Desarrollo Estudiantil</strong></td>
+        <td>Estudiantes</td>
+        <td>Servicios de Orientación y Asesoría Académica.</td>
+      </tr>
+      <tr>
+        <td><strong>Coordinación de Extensión</strong></td>
+        <td>Extensión<br>Estudiantes<br>Academia</td>
+        <td>Actividades Socio-culturales<br>Actividades deportivas institucionales<br>Actualización de malla curricular.</td>
+      </tr>
+      <tr>
+        <td><strong>Departamento de Compras</strong></td>
+        <td>Otros Gastos de Funcionamiento</td>
+        <td>Gestión administrativa<br>Conservación y mantenimiento de infraestructura.</td>
+      </tr>
+      <tr>
+        <td><strong>Centro de Extensión Profesional</strong></td>
+        <td>Extensión</td>
+        <td>Acompañamiento Profesional y asesorías externas.</td>
+      </tr>
+      <tr>
+        <td><strong>Instituto de Investigaciones</strong></td>
+        <td>Extensión<br>Academia</td>
+        <td>Acompañamiento Profesional<br>Tecnologías para el proceso de enseñanza.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- SECCIÓN 7: PROTOCOLO DE CONTINGENCIA -->
+  <h1 style="margin-top: 25px;">7. Protocolos de Contingencia</h1>
+  
+  <div class="callout callout-warning no-break">
+    <strong>⚠️ ¿Qué hacer si un revisor olvida el PIN Maestro?</strong>
+    <p>
+      Como administrador con acceso a Google Drive, usted no necesita reprogramar el sistema:
+    </p>
+    <ol style="margin-top: 4px;">
+      <li>Abra la hoja de cálculo de Google Sheets asociada a la aplicación.</li>
+      <li>Diríjase a la pestaña llamada <strong>"Configuración"</strong>.</li>
+      <li>En la celda <strong>B2</strong> (al lado de <code>PIN_RECEPTOR</code>) podrá leer directamente el PIN vigente o escribir una nueva clave de 6 dígitos numéricos.</li>
+      <li>El cambio se aplicará de inmediato la próxima vez que intente acceder al panel.</li>
+    </ol>
+  </div>
+
+  <div class="callout callout-primary no-break" style="margin-top: 20px;">
     <strong>✅ Resumen de Seguridad Operativa</strong>
     <p>
-      El sistema FaCES combina autonomía departamental con estricto control central. La Zona de Staging actúa como escudo de datos, el Copiado Inteligente elimina el riesgo humano en fórmulas, y la gestión por PIN asegura la identidad de cada transacción.
+      El sistema FaCES combina autonomía departamental con estricto control central. La Zona de Staging actúa como escudo protector de datos, el Copiado Inteligente elimina el error humano en fórmulas, y la gestión por PIN asegura la integridad de la labor administrativa.
     </p>
   </div>
 
@@ -855,7 +900,7 @@ function generatePdf(htmlContent, outputPdfName) {
   fs.writeFileSync(tempHtmlPath, htmlContent, 'utf8');
 
   console.log(`Generando ${outputPdfName}...`);
-  const fileUrl = 'file:///' + tempHtmlPath.replace(/\\\\/g, '/');
+  const fileUrl = 'file:///' + tempHtmlPath.replace(/\\/g, '/');
 
   execFileSync(EDGE_PATH, [
     '--headless',
@@ -871,12 +916,10 @@ function generatePdf(htmlContent, outputPdfName) {
   } else {
     throw new Error(`Fallo al generar ${outputPdfName}`);
   }
-
-  // Conservar el archivo HTML generado en scripts/ para respaldo o inspección
 }
 
 function main() {
-  console.log('=== Generador de Manuales de Usuario en PDF - FaCES UCV ===\\n');
+  console.log('=== Generador de Manuales de Usuario Oficiales en PDF (con Capturas de Pantalla) - FaCES UCV ===\n');
   
   const emisorHtml = getEmisorManualHtml();
   generatePdf(emisorHtml, 'Manual_Usuario_Emisor_FaCES.pdf');
@@ -884,7 +927,7 @@ function main() {
   const receptorHtml = getReceptorManualHtml();
   generatePdf(receptorHtml, 'Manual_Usuario_Receptor_FaCES.pdf');
 
-  console.log('\\n✓ Todos los manuales PDF han sido generados exitosamente en la raíz del proyecto.');
+  console.log('\n✓ Todos los manuales PDF han sido generados exitosamente en la raíz del proyecto.');
 }
 
 main();
